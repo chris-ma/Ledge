@@ -17,6 +17,14 @@ const geographyPoint = customType<{ data: string }>({
   },
 });
 
+// Known drizzle-kit quirk: for a GENERATED ALWAYS AS column using this
+// customType, `drizzle-kit generate` wraps the type in double quotes
+// ("geography(Point,4326)"), which Postgres parses as one quoted identifier
+// rather than the type + modifier — CREATE TABLE then fails with
+// `type "geography(Point,4326)" does not exist`. If schema.ts ever changes
+// and a migration gets regenerated, check the new SQL file's `geog` column
+// definition for this and strip the stray quotes by hand before applying.
+
 /**
  * One saved rock-fishing ledge. facing_bearing is the compass direction the
  * ledge face points OUT TO SEA (0-359deg) — swell/current "coming from" this

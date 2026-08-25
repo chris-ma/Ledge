@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS "ledges" (
 	"is_declared_hazard" boolean DEFAULT false NOT NULL,
 	"height_verified" boolean DEFAULT false NOT NULL,
 	"notes" text,
-	"geog" "geography(Point,4326)" GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography) STORED,
+	"geog" geography(Point,4326) GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography) STORED,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "ledges_name_unique" UNIQUE("name")
