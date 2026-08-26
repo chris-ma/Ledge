@@ -74,6 +74,19 @@ export function parseOdbTideResponse(raw: unknown): TideHour[] {
   );
 }
 
+// Observed in production: under concurrent load, ODB sometimes returns an
+// HTTP 200 with an empty `{}` body instead of a proper error or the real
+// payload — a free academic API apparently shedding load rather than
+// rejecting it cleanly. A short retry with backoff resolves this in
+// practice (confirmed against the live API, unlike the shape assumptions
+// above which couldn't be).
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function fetchTide(
   lat: number,
   lon: number,
@@ -86,14 +99,24 @@ export async function fetchTide(
   url.searchParams.set("start", startDate);
   url.searchParams.set("end", endDate);
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(
-      `ODB Open Tide API returned ${response.status} for (${lat}, ${lon}): ` +
-        (await response.text()),
-    );
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      await sleep(RETRY_DELAY_MS * attempt);
+    }
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(
+          `ODB Open Tide API returned ${response.status} for (${lat}, ${lon}): ` +
+            (await response.text()),
+        );
+      }
+      const body: unknown = await response.json();
+      return parseOdbTideResponse(body);
+    } catch (err) {
+      lastError = err;
+    }
   }
-
-  const body: unknown = await response.json();
-  return parseOdbTideResponse(body);
+  throw lastError;
 }

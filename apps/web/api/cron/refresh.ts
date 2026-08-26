@@ -7,7 +7,11 @@ import { ledges, type Ledge } from "../../server/db/schema.js";
 // configurable on the Hobby plan.
 export const maxDuration = 60;
 
-const CONCURRENCY = 4;
+// Kept low: the free ODB tide API has shown signs of shedding load (an
+// HTTP 200 with an empty body) under higher concurrency — see the retry
+// in server/sources/odbTide.ts. 12 ledges at this concurrency comfortably
+// fits inside maxDuration even with retries.
+const CONCURRENCY = 2;
 
 interface LedgeRunResult {
   ledgeName: string;
