@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { TIDE_CURRENT_PRESSURE_REF_MAX_MS } from "./constants.js";
 import {
   computeFishingPressureForHour,
   computeFishingPressureIndex,
@@ -51,7 +52,7 @@ describe("computeFishingPressureIndex", () => {
   });
 
   it("saturates at 100 when both terms are at/above their reference max", () => {
-    expect(computeFishingPressureIndex(200, 0.3)).toBe(100);
+    expect(computeFishingPressureIndex(200, TIDE_CURRENT_PRESSURE_REF_MAX_MS)).toBe(100);
   });
 
   it("blends partial terms evenly (0.5/0.5 weights)", () => {

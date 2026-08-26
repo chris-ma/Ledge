@@ -48,10 +48,12 @@ export const TREND_WINDOW_HOURS = 3;
 // rather than us guessing "rising tide favours which compass bearing".
 /** Swell term uses the same wave_load scale as the LLI model. */
 export const FISHING_WAVE_LOAD_REF_MAX = WAVE_LOAD_REF_MAX;
-/** A brisk tidal current for the open Sydney coast (TPXO speeds here are
- * typically well under this even at spring tide) — saturation point for
- * the tide term's 0-1 normalization. */
-export const TIDE_CURRENT_PRESSURE_REF_MAX_MS = 0.3;
+/** A brisk tidal current for the open Sydney coast — saturation point for
+ * the tide term's 0-1 normalization. Corrected from an initial guess of 0.3
+ * (30 cm/s) after seeing real ODB/TPXO output for these ledges: observed
+ * speeds ran ~0.005-0.023 m/s, an order of magnitude smaller, which had
+ * been crushing the tide term to near-zero for every ledge/hour. */
+export const TIDE_CURRENT_PRESSURE_REF_MAX_MS = 0.03;
 /** Equal weight: the user's own framing named swell and tide as two equally
  * contributing halves of "pressure", unlike LLI's safety-driven 0.7/0.3 split. */
 export const FISHING_SWELL_WEIGHT = 0.5;

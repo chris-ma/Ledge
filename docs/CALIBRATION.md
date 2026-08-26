@@ -47,7 +47,7 @@ location.
 
 | Constant | Value | Why |
 |---|---|---|
-| `TIDE_CURRENT_PRESSURE_REF_MAX_MS` | 0.3 m/s | A brisk tidal current for the open Sydney coast — TPXO speeds here are typically well under this even at spring tide. Saturation point for the tide term's 0-1 normalization. |
+| `TIDE_CURRENT_PRESSURE_REF_MAX_MS` | 0.03 m/s | Corrected from an initial guess of 0.3 (30 cm/s) after seeing real ODB/TPXO output for the seeded ledges: observed tidal current speeds ran ~0.005-0.023 m/s, an order of magnitude smaller than assumed, which had been crushing the tide term to near-zero (every ledge reading "poor") regardless of actual conditions. Still a first-pass guess — a full spring/neap cycle hasn't been observed, just one snapshot. |
 | `FISHING_SWELL_WEIGHT` / `FISHING_TIDE_WEIGHT` | 0.5 / 0.5 | Equal weight, unlike LLI's safety-driven 0.7/0.3 split — the feature request that motivated this named swell and tide as two equally contributing halves of "pressure". |
 | `FISHING_FAIR_THRESHOLD` / `FISHING_GOOD_THRESHOLD` / `FISHING_GREAT_THRESHOLD` | 25 / 50 / 75 | Even 4-way split of the 0-100 score into poor/fair/good/great — no basis yet for uneven bands. |
 
