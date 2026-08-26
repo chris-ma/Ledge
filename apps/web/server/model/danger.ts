@@ -1,10 +1,10 @@
-import type { DangerTier } from "../db/schema";
+import type { DangerTier } from "../db/schema.js";
 import {
   CAUTION_THRESHOLD_FRACTION,
   DEFAULT_SLOPE_TANB,
   GRAVITY_M_S2,
   TP_SHARP_RISE_S,
-} from "./constants";
+} from "./constants.js";
 
 export function computeDeepWaterWavelength(tpS: number): number {
   return (GRAVITY_M_S2 * tpS ** 2) / (2 * Math.PI);

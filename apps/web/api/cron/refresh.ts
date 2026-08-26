@@ -1,6 +1,6 @@
-import { db } from "../../server/db/client";
-import { computeAndUpsertForLedge } from "../../server/computeAndUpsert";
-import { ledges, type Ledge } from "../../server/db/schema";
+import { db } from "../../server/db/client.js";
+import { computeAndUpsertForLedge } from "../../server/computeAndUpsert.js";
+import { ledges, type Ledge } from "../../server/db/schema.js";
 
 // Fetching+computing 12 ledges against two external APIs can comfortably
 // exceed Vercel's default function timeout; this is well within what's

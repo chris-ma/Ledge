@@ -4,7 +4,7 @@ import {
   computeDeepWaterWavelength,
   computeStockdonR2,
   trailingDelta,
-} from "./danger";
+} from "./danger.js";
 
 describe("computeDeepWaterWavelength", () => {
   it("matches g*Tp^2/(2*pi) for a 10s period", () => {

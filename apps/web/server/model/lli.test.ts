@@ -7,7 +7,7 @@ import {
   computeTideModulationFactor,
   computeWaveLoad,
   directionalClamp,
-} from "./lli";
+} from "./lli.js";
 
 describe("angleDiffDeg", () => {
   it("returns 0 for identical bearings", () => {

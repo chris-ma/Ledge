@@ -1,12 +1,12 @@
 import { sql } from "drizzle-orm";
-import { db } from "./db/client";
-import { ledgeConditions, type Ledge } from "./db/schema";
-import { FORECAST_DAYS, TREND_WINDOW_HOURS } from "./model/constants";
-import { computeDangerSeries } from "./model/danger";
-import { computeLliForHour } from "./model/lli";
-import { mergeHourlySeries } from "./merge";
-import { fetchSwellAndCurrent } from "./sources/openMeteo";
-import { fetchTide } from "./sources/odbTide";
+import { db } from "./db/client.js";
+import { ledgeConditions, type Ledge } from "./db/schema.js";
+import { FORECAST_DAYS, TREND_WINDOW_HOURS } from "./model/constants.js";
+import { computeDangerSeries } from "./model/danger.js";
+import { computeLliForHour } from "./model/lli.js";
+import { mergeHourlySeries } from "./merge.js";
+import { fetchSwellAndCurrent } from "./sources/openMeteo.js";
+import { fetchTide } from "./sources/odbTide.js";
 
 const UPSERT_CHUNK_SIZE = 500;
 const ONE_HOUR_MS = 60 * 60 * 1000;

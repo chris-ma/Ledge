@@ -8,7 +8,7 @@ import {
   TIDE_TARGET_FRACTION,
   WAVE_LOAD_REF_MAX,
   WAVE_WEIGHT,
-} from "./constants";
+} from "./constants.js";
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));

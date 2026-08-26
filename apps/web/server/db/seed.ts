@@ -4,8 +4,8 @@
 // height_verified stays false on every row until someone checks them
 // against the real platform.
 import "dotenv/config";
-import { db } from "./client";
-import { ledges, type NewLedge } from "./schema";
+import { db } from "./client.js";
+import { ledges, type NewLedge } from "./schema.js";
 
 const SEED_LEDGES: NewLedge[] = [
   {

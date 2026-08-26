@@ -1,6 +1,6 @@
 import { and, asc, eq, gte, lte } from "drizzle-orm";
-import { db } from "../server/db/client";
-import { ledgeConditions } from "../server/db/schema";
+import { db } from "../server/db/client.js";
+import { ledgeConditions } from "../server/db/schema.js";
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);

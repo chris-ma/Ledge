@@ -1,5 +1,5 @@
-import type { SwellCurrentHour } from "./sources/openMeteo";
-import type { TideHour } from "./sources/odbTide";
+import type { SwellCurrentHour } from "./sources/openMeteo.js";
+import type { TideHour } from "./sources/odbTide.js";
 
 export interface MergedHour {
   /** Normalized: ISO 8601, UTC, top of hour, zero seconds/ms. */

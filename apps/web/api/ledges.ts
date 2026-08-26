@@ -1,5 +1,5 @@
-import { db } from "../server/db/client";
-import { ledges } from "../server/db/schema";
+import { db } from "../server/db/client.js";
+import { ledges } from "../server/db/schema.js";
 
 export async function GET(): Promise<Response> {
   try {
