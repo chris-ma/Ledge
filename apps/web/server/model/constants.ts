@@ -38,3 +38,25 @@ export const CAUTION_THRESHOLD_FRACTION = 0.75;
 /** Trailing-window peak-period rise (seconds) treated as "rising sharply". */
 export const TP_SHARP_RISE_S = 2.0;
 export const TREND_WINDOW_HOURS = 3;
+
+// Fishing Pressure Index: "swell and tide pushing directly onto the ledge
+// face" as a fishing-opportunity signal, independent of the LLI/danger
+// model above (a ledge can be a great, safe fish right now). Reuses
+// wave_load's existing directional cosine-clamp for the swell term; the
+// tide term is new — ODB's tidal current vector (u/v), previously fetched
+// but unused, gives a real modelled flood/ebb direction+speed per hour
+// rather than us guessing "rising tide favours which compass bearing".
+/** Swell term uses the same wave_load scale as the LLI model. */
+export const FISHING_WAVE_LOAD_REF_MAX = WAVE_LOAD_REF_MAX;
+/** A brisk tidal current for the open Sydney coast (TPXO speeds here are
+ * typically well under this even at spring tide) — saturation point for
+ * the tide term's 0-1 normalization. */
+export const TIDE_CURRENT_PRESSURE_REF_MAX_MS = 0.3;
+/** Equal weight: the user's own framing named swell and tide as two equally
+ * contributing halves of "pressure", unlike LLI's safety-driven 0.7/0.3 split. */
+export const FISHING_SWELL_WEIGHT = 0.5;
+export const FISHING_TIDE_WEIGHT = 0.5;
+/** Even 4-way split of the 0-100 score into poor/fair/good/great. */
+export const FISHING_FAIR_THRESHOLD = 25;
+export const FISHING_GOOD_THRESHOLD = 50;
+export const FISHING_GREAT_THRESHOLD = 75;

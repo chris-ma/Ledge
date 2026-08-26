@@ -22,6 +22,7 @@ export interface Ledge {
 }
 
 export type DangerTier = "normal" | "caution" | "dangerous";
+export type FishingTier = "poor" | "fair" | "good" | "great";
 
 export interface LedgeCondition {
   ledgeId: string;
@@ -41,6 +42,12 @@ export interface LedgeCondition {
   r2EstimateM: number | null;
   dangerFlag: boolean | null;
   dangerTier: DangerTier | null;
+  /** Tidal current (ODB/TPXO), independent of the LLI/danger safety model. */
+  tideCurrentSpeedMs: number | null;
+  tideCurrentDirDeg: number | null;
+  /** 0-100 Fishing Pressure Index, or null meaning "no data for this hour" — NEVER treat null as 0. */
+  fishingPressure: number | null;
+  fishingTier: FishingTier | null;
   dataComplete: boolean;
   createdAt: string;
 }

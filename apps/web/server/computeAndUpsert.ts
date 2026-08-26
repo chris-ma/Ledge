@@ -4,6 +4,7 @@ import { ledgeConditions, type Ledge } from "./db/schema.js";
 import { destinationPoint } from "./geo.js";
 import { FORECAST_DAYS, TREND_WINDOW_HOURS } from "./model/constants.js";
 import { computeDangerSeries } from "./model/danger.js";
+import { computeFishingPressureForHour } from "./model/fishingPressure.js";
 import { computeLliForHour } from "./model/lli.js";
 import { mergeHourlySeries } from "./merge.js";
 import { fetchSwellAndCurrent } from "./sources/openMeteo.js";
@@ -126,6 +127,14 @@ export async function computeAndUpsertForLedge(ledge: Ledge): Promise<ComputeAnd
       platformHeightM: ledge.platformHeightM,
     });
     const danger = dangerResults[i];
+    const fishingResult = computeFishingPressureForHour({
+      hsM: hour.hsM,
+      tpS: hour.tpS,
+      swellDirDeg: hour.swellDirDeg,
+      tideCurrentUCmS: hour.tideCurrentUCmS,
+      tideCurrentVCmS: hour.tideCurrentVCmS,
+      facingBearingDeg: ledge.facingBearing,
+    });
 
     return {
       ledgeId: ledge.id,
@@ -144,6 +153,10 @@ export async function computeAndUpsertForLedge(ledge: Ledge): Promise<ComputeAnd
       r2EstimateM: danger.r2EstimateM,
       dangerFlag: danger.dangerFlag,
       dangerTier: danger.dangerTier,
+      tideCurrentSpeedMs: fishingResult?.tideCurrentSpeedMs ?? null,
+      tideCurrentDirDeg: fishingResult?.tideCurrentDirDeg ?? null,
+      fishingPressure: fishingResult?.fishingPressure ?? null,
+      fishingTier: fishingResult?.fishingTier ?? null,
     };
   });
 
@@ -183,6 +196,10 @@ async function upsertConditions(rows: (typeof ledgeConditions.$inferInsert)[]): 
           r2EstimateM: sql`excluded.r2_estimate_m`,
           dangerFlag: sql`excluded.danger_flag`,
           dangerTier: sql`excluded.danger_tier`,
+          tideCurrentSpeedMs: sql`excluded.tide_current_speed_ms`,
+          tideCurrentDirDeg: sql`excluded.tide_current_dir_deg`,
+          fishingPressure: sql`excluded.fishing_pressure`,
+          fishingTier: sql`excluded.fishing_tier`,
         },
       });
   }

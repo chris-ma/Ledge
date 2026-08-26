@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { CircleMarker, Tooltip } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 import { DangerBadge } from "@/components/shared/DangerBadge";
+import { FishingBadge } from "@/components/shared/FishingBadge";
 import type { Ledge, LedgeCondition } from "@/lib/types";
 import { lliToColor } from "@/lib/colorScale";
 
@@ -63,7 +64,10 @@ export function LedgeMarkers({ ledges, conditionsByLedgeId }: LedgeMarkersProps)
             <div className="font-semibold">{ledge.name}</div>
             <div>{ledge.area}</div>
             <div>LLI: {lli === null ? "no data" : Math.round(lli)}</div>
-            <DangerBadge tier={condition?.dangerTier ?? null} />
+            <div className="flex items-center gap-1">
+              <DangerBadge tier={condition?.dangerTier ?? null} />
+              <FishingBadge tier={condition?.fishingTier ?? null} />
+            </div>
             {!ledge.heightVerified && <div>Unverified location/height</div>}
           </div>
         </Tooltip>

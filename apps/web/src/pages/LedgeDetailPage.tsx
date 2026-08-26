@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { AttributionFooter } from "@/components/shared/AttributionFooter";
 import { DangerBadge } from "@/components/shared/DangerBadge";
 import { DisclaimerBanner } from "@/components/shared/DisclaimerBanner";
+import { FishingBadge } from "@/components/shared/FishingBadge";
 import { UnverifiedBadge } from "@/components/shared/UnverifiedBadge";
 import { HeatmapGrid } from "@/components/heatmap/HeatmapGrid";
 import { HeatmapLegend } from "@/components/heatmap/HeatmapLegend";
@@ -49,6 +50,7 @@ export function LedgeDetailPage() {
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <span>Current hour:</span>
               <DangerBadge tier={currentCondition.dangerTier} />
+              <FishingBadge tier={currentCondition.fishingTier} />
               <span>
                 LLI {currentCondition.lli === null ? "no data" : Math.round(currentCondition.lli)}
               </span>

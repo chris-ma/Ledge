@@ -11,6 +11,10 @@ export interface MergedHour {
   currentDirDeg: number | null;
   tideHeightCm: number | null;
   tideRateCmPerHr: number | null;
+  /** Tidal current vector components (cm/s) from ODB's TPXO model, for the
+   * Fishing Pressure Index's directional tide term — see server/model/fishingPressure.ts. */
+  tideCurrentUCmS: number | null;
+  tideCurrentVCmS: number | null;
 }
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -69,6 +73,8 @@ export function mergeHourlySeries(
       currentDirDeg: sc.currentDirDeg,
       tideHeightCm: tideHour?.tideHeightCm ?? null,
       tideRateCmPerHr,
+      tideCurrentUCmS: tideHour?.currentUCmS ?? null,
+      tideCurrentVCmS: tideHour?.currentVCmS ?? null,
     };
   });
 }

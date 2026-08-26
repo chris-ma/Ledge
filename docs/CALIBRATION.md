@@ -34,6 +34,28 @@ Per-ledge `safety_margin` (default 0.70, lowered to 0.60 for the three
 README-flagged known-hazard seed ledges) is the main dial for "how
 conservative is this ledge's danger flag" — see `server/db/seed.ts`.
 
+## Fishing Pressure Index
+
+A separate score from LLI/danger above — "how much swell and tide are
+pushing directly onto this ledge's face right now", as a fishing-opportunity
+signal rather than a safety one. Reuses the LLI's swell term (`wave_load`)
+unchanged; the tide term is new, built from ODB's modelled tidal current
+vector (`u`/`v`, previously fetched but unused) rather than guessing which
+compass bearing "rising tide" favours — the current's own direction and
+speed each hour already encode flood vs. ebb correctly for that ledge's
+location.
+
+| Constant | Value | Why |
+|---|---|---|
+| `TIDE_CURRENT_PRESSURE_REF_MAX_MS` | 0.3 m/s | A brisk tidal current for the open Sydney coast — TPXO speeds here are typically well under this even at spring tide. Saturation point for the tide term's 0-1 normalization. |
+| `FISHING_SWELL_WEIGHT` / `FISHING_TIDE_WEIGHT` | 0.5 / 0.5 | Equal weight, unlike LLI's safety-driven 0.7/0.3 split — the feature request that motivated this named swell and tide as two equally contributing halves of "pressure". |
+| `FISHING_FAIR_THRESHOLD` / `FISHING_GOOD_THRESHOLD` / `FISHING_GREAT_THRESHOLD` | 25 / 50 / 75 | Even 4-way split of the 0-100 score into poor/fair/good/great — no basis yet for uneven bands. |
+
+`tide_current_dir_deg` is stored using the same "source bearing" convention
+as `swell_dir_deg` (the direction the flow is arriving *from*), even though
+ODB's raw `u`/`v` describe the direction water moves *toward* — see the
+conversion and reasoning in `server/model/fishingPressure.ts`.
+
 ## What "calibrating" would actually mean
 
 None of the above has been checked against real fishing outcomes or incident

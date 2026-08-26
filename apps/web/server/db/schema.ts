@@ -70,6 +70,9 @@ export const ledges = pgTable(
 export const dangerTiers = ["normal", "caution", "dangerous"] as const;
 export type DangerTier = (typeof dangerTiers)[number];
 
+export const fishingTiers = ["poor", "fair", "good", "great"] as const;
+export type FishingTier = (typeof fishingTiers)[number];
+
 /**
  * Hourly forecast row for one ledge. Raw inputs and every computed field are
  * nullable: three independent free upstream APIs (Open-Meteo swell+current,
@@ -104,6 +107,15 @@ export const ledgeConditions = pgTable(
     r2EstimateM: doublePrecision("r2_estimate_m"),
     dangerFlag: boolean("danger_flag"),
     dangerTier: text("danger_tier", { enum: dangerTiers }),
+
+    // Fishing Pressure Index (independent of the LLI/danger safety model
+    // above) — see server/model/fishingPressure.ts. tideCurrent* are the
+    // ODB tidal current vector resolved to speed+bearing, kept alongside
+    // the score since they're otherwise-derived-only values.
+    tideCurrentSpeedMs: doublePrecision("tide_current_speed_ms"),
+    tideCurrentDirDeg: doublePrecision("tide_current_dir_deg"),
+    fishingPressure: doublePrecision("fishing_pressure"),
+    fishingTier: text("fishing_tier", { enum: fishingTiers }),
 
     dataComplete: boolean("data_complete").generatedAlwaysAs(
       sql`(hs_m is not null and tp_s is not null and swell_dir_deg is not null and current_speed_ms is not null and current_dir_deg is not null and tide_height_cm is not null)`,
