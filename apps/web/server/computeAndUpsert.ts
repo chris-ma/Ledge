@@ -36,10 +36,30 @@ export async function computeAndUpsertForLedge(ledge: Ledge): Promise<ComputeAnd
   const tideStart = toDateOnly(new Date(now.getTime() - 24 * ONE_HOUR_MS));
   const tideEnd = toDateOnly(new Date(now.getTime() + (FORECAST_DAYS + 1) * 24 * ONE_HOUR_MS));
 
-  const [swellCurrent, tide] = await Promise.all([
+  // allSettled rather than all: a tide-source failure for this ledge (e.g.
+  // a near-shore point ODB's global grid can't resolve) shouldn't discard
+  // swell/current data that DID succeed. mergeHourlySeries already treats a
+  // missing source as nulls for those fields per hour, not a dropped row —
+  // an empty tide series degrades every hour's tide fields to null (LLI
+  // then also comes out null, since it needs tide), but danger tier/R2
+  // still computes from Hs/Tp alone, which matters more to keep than to lose.
+  const [swellCurrentResult, tideResult] = await Promise.allSettled([
     fetchSwellAndCurrent(ledge.lat, ledge.lon, FORECAST_DAYS),
     fetchTide(ledge.lat, ledge.lon, tideStart, tideEnd),
   ]);
+
+  if (swellCurrentResult.status === "rejected") {
+    throw swellCurrentResult.reason;
+  }
+  const swellCurrent = swellCurrentResult.value;
+
+  if (tideResult.status === "rejected") {
+    console.error(
+      `Tide fetch failed for ledge "${ledge.name}" — proceeding with null tide fields for this run:`,
+      tideResult.reason,
+    );
+  }
+  const tide = tideResult.status === "fulfilled" ? tideResult.value : [];
 
   const merged = mergeHourlySeries(swellCurrent, tide);
 
