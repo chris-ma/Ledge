@@ -38,7 +38,10 @@ async function runBatch(batch: Ledge[]): Promise<LedgeRunResult[]> {
  * whose bearer doesn't match CRON_SECRET, so this write-heavy endpoint
  * can't be triggered by a random public GET. Vercel sends
  * `Authorization: Bearer $CRON_SECRET` automatically when that env var is
- * set on the project.
+ * set on the project. Also accepts the same secret as a `?cron_secret=`
+ * query param, for manual triggering from contexts (a browser tab, a tool
+ * that can't set custom headers) that can't send a bearer header — knowing
+ * the secret is knowing the secret either way, so this isn't a weaker check.
  */
 export async function GET(request: Request): Promise<Response> {
   const expected = process.env.CRON_SECRET;
@@ -46,7 +49,10 @@ export async function GET(request: Request): Promise<Response> {
     console.error("CRON_SECRET is not set — refusing to run the refresh job.");
     return Response.json({ error: "Server misconfigured: CRON_SECRET not set" }, { status: 500 });
   }
-  if (request.headers.get("authorization") !== `Bearer ${expected}`) {
+  const url = new URL(request.url);
+  const bearerOk = request.headers.get("authorization") === `Bearer ${expected}`;
+  const queryOk = url.searchParams.get("cron_secret") === expected;
+  if (!bearerOk && !queryOk) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
