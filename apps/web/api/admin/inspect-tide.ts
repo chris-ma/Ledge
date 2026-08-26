@@ -28,6 +28,7 @@ export async function GET(request: Request): Promise<Response> {
   const end = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   odbUrl.searchParams.set("start", start);
   odbUrl.searchParams.set("end", end);
+  odbUrl.searchParams.set("append", "z,u,v");
 
   const response = await fetch(odbUrl);
   const text = await response.text();

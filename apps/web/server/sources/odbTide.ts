@@ -98,6 +98,11 @@ export async function fetchTide(
   url.searchParams.set("lat0", lat.toFixed(4));
   url.searchParams.set("start", startDate);
   url.searchParams.set("end", endDate);
+  // Without this, ODB only returns z (tide height) — u/v (tidal current
+  // components, needed for the Fishing Pressure Index) are opt-in.
+  // Confirmed against the live API: omitting it silently drops u/v rather
+  // than erroring, which is why they came out null everywhere at first.
+  url.searchParams.set("append", "z,u,v");
 
   let lastError: unknown;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
