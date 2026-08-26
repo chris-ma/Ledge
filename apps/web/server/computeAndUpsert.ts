@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "./db/client.js";
 import { ledgeConditions, type Ledge } from "./db/schema.js";
+import { destinationPoint } from "./geo.js";
 import { FORECAST_DAYS, TREND_WINDOW_HOURS } from "./model/constants.js";
 import { computeDangerSeries } from "./model/danger.js";
 import { computeLliForHour } from "./model/lli.js";
@@ -10,6 +11,16 @@ import { fetchTide } from "./sources/odbTide.js";
 
 const UPSERT_CHUNK_SIZE = 500;
 const ONE_HOUR_MS = 60 * 60 * 1000;
+
+// ODB's underlying TPXO model resolves ~1/30deg (~3-4km) even at its
+// highest-resolution "atlas" tier, and near-shore cells commonly land-mask
+// out right at the coastline (confirmed against the live API: 6 of 12
+// Sydney ledges consistently returned an empty body). facing_bearing
+// already encodes "which way is out to sea" for every ledge, so nudge the
+// tide-query point that far offshore before asking ODB — safely past the
+// grid resolution, and tide height itself doesn't vary meaningfully over a
+// few km, so this doesn't compromise accuracy the way it would for wave data.
+const TIDE_QUERY_OFFSET_KM = 8;
 
 function toDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -43,9 +54,16 @@ export async function computeAndUpsertForLedge(ledge: Ledge): Promise<ComputeAnd
   // an empty tide series degrades every hour's tide fields to null (LLI
   // then also comes out null, since it needs tide), but danger tier/R2
   // still computes from Hs/Tp alone, which matters more to keep than to lose.
+  const tideQueryPoint = destinationPoint(
+    ledge.lat,
+    ledge.lon,
+    ledge.facingBearing,
+    TIDE_QUERY_OFFSET_KM,
+  );
+
   const [swellCurrentResult, tideResult] = await Promise.allSettled([
     fetchSwellAndCurrent(ledge.lat, ledge.lon, FORECAST_DAYS),
-    fetchTide(ledge.lat, ledge.lon, tideStart, tideEnd),
+    fetchTide(tideQueryPoint.lat, tideQueryPoint.lon, tideStart, tideEnd),
   ]);
 
   if (swellCurrentResult.status === "rejected") {
