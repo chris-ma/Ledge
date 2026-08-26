@@ -7,20 +7,49 @@ import { computeDangerSeries } from "./model/danger.js";
 import { computeLliForHour } from "./model/lli.js";
 import { mergeHourlySeries } from "./merge.js";
 import { fetchSwellAndCurrent } from "./sources/openMeteo.js";
-import { fetchTide } from "./sources/odbTide.js";
+import { fetchTide, type TideHour } from "./sources/odbTide.js";
 
 const UPSERT_CHUNK_SIZE = 500;
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
 // ODB's underlying TPXO model resolves ~1/30deg (~3-4km) even at its
 // highest-resolution "atlas" tier, and near-shore cells commonly land-mask
-// out right at the coastline (confirmed against the live API: 6 of 12
-// Sydney ledges consistently returned an empty body). facing_bearing
-// already encodes "which way is out to sea" for every ledge, so nudge the
-// tide-query point that far offshore before asking ODB — safely past the
-// grid resolution, and tide height itself doesn't vary meaningfully over a
-// few km, so this doesn't compromise accuracy the way it would for wave data.
+// out right at the coastline. Confirmed against the live API in both
+// directions: 6 of 12 Sydney ledges failed at their exact coordinate but
+// succeeded once nudged this far offshore along facing_bearing (which
+// already encodes "which way is out to sea") — while one ledge at the tip
+// of a peninsula (Barrenjoey Head) was the opposite: fine at its exact
+// coordinate, but the offshore nudge landed on a different bad cell nearby.
+// So try the exact coordinate first (semantically correct), and only fall
+// back to the offset if that fails — never force the nudge unconditionally.
 const TIDE_QUERY_OFFSET_KM = 8;
+
+/**
+ * Tries the ledge's exact coordinate first, falls back to a point nudged
+ * `TIDE_QUERY_OFFSET_KM` out to sea if that fails — see the constant's
+ * comment for why neither alone covers every ledge.
+ */
+async function fetchTideWithFallback(
+  ledge: Ledge,
+  startDate: string,
+  endDate: string,
+): Promise<TideHour[]> {
+  try {
+    return await fetchTide(ledge.lat, ledge.lon, startDate, endDate);
+  } catch (exactErr) {
+    const offshore = destinationPoint(ledge.lat, ledge.lon, ledge.facingBearing, TIDE_QUERY_OFFSET_KM);
+    try {
+      return await fetchTide(offshore.lat, offshore.lon, startDate, endDate);
+    } catch (offshoreErr) {
+      console.error(
+        `Tide fetch failed for "${ledge.name}" at both its exact coordinate and the offshore fallback:`,
+        exactErr,
+        offshoreErr,
+      );
+      throw offshoreErr;
+    }
+  }
+}
 
 function toDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -47,23 +76,16 @@ export async function computeAndUpsertForLedge(ledge: Ledge): Promise<ComputeAnd
   const tideStart = toDateOnly(new Date(now.getTime() - 24 * ONE_HOUR_MS));
   const tideEnd = toDateOnly(new Date(now.getTime() + (FORECAST_DAYS + 1) * 24 * ONE_HOUR_MS));
 
-  // allSettled rather than all: a tide-source failure for this ledge (e.g.
-  // a near-shore point ODB's global grid can't resolve) shouldn't discard
-  // swell/current data that DID succeed. mergeHourlySeries already treats a
-  // missing source as nulls for those fields per hour, not a dropped row —
-  // an empty tide series degrades every hour's tide fields to null (LLI
-  // then also comes out null, since it needs tide), but danger tier/R2
-  // still computes from Hs/Tp alone, which matters more to keep than to lose.
-  const tideQueryPoint = destinationPoint(
-    ledge.lat,
-    ledge.lon,
-    ledge.facingBearing,
-    TIDE_QUERY_OFFSET_KM,
-  );
-
+  // allSettled rather than all: a tide-source failure for this ledge
+  // shouldn't discard swell/current data that DID succeed. mergeHourlySeries
+  // already treats a missing source as nulls for those fields per hour, not
+  // a dropped row — an empty tide series degrades every hour's tide fields
+  // to null (LLI then also comes out null, since it needs tide), but danger
+  // tier/R2 still computes from Hs/Tp alone, which matters more to keep than
+  // to lose.
   const [swellCurrentResult, tideResult] = await Promise.allSettled([
     fetchSwellAndCurrent(ledge.lat, ledge.lon, FORECAST_DAYS),
-    fetchTide(tideQueryPoint.lat, tideQueryPoint.lon, tideStart, tideEnd),
+    fetchTideWithFallback(ledge, tideStart, tideEnd),
   ]);
 
   if (swellCurrentResult.status === "rejected") {
