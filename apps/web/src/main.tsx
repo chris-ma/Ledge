@@ -12,6 +12,9 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      // Data refreshes hourly server-side (see .github/workflows/hourly-refresh.yml);
+      // a tab left open should pick that up without a manual reload.
+      refetchInterval: 15 * 60 * 1000,
     },
   },
 });

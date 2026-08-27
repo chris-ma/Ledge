@@ -1,0 +1,19 @@
+name: Hourly ledge conditions refresh
+
+# Vercel Cron on the Hobby plan is capped at once/day, but the data pipeline
+# itself (apps/web/api/cron/refresh.ts) is idempotent and cheap to call more
+# often, so this triggers it hourly from outside Vercel. Requires a
+# repository secret named CRON_SECRET set to the same value as the Vercel
+# project's CRON_SECRET env var.
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger refresh endpoint
+        run: |
+          curl -sS -f "https://ledge-xi.vercel.app/api/cron/refresh?cron_secret=${{ secrets.CRON_SECRET }}"
