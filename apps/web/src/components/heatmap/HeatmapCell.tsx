@@ -6,7 +6,8 @@ function formatValue(value: number | null, unit: string, digits = 1): string {
   return value === null ? "no data" : `${value.toFixed(digits)}${unit}`;
 }
 
-function buildTitle(condition: LedgeCondition): string {
+/** Tooltip text for one hour's condition — shared with NowTimeline's cells. */
+export function buildConditionTooltip(condition: LedgeCondition): string {
   return [
     formatSydneyDateTime(condition.ts),
     `LLI: ${condition.lli === null ? "no data" : Math.round(condition.lli)}`,
@@ -46,7 +47,7 @@ export function HeatmapCell({ condition }: { condition: LedgeCondition | null })
         backgroundColor: lliToColor(condition.lli),
         backgroundImage: isDangerLike ? DANGER_HATCH_BACKGROUND : undefined,
       }}
-      title={buildTitle(condition)}
+      title={buildConditionTooltip(condition)}
     />
   );
 }

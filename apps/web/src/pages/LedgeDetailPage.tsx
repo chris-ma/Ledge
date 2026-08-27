@@ -1,33 +1,57 @@
 import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AttributionFooter } from "@/components/shared/AttributionFooter";
-import { DangerBadge } from "@/components/shared/DangerBadge";
+import { DANGER_TIER_CLASSES, DANGER_TIER_LABELS, DangerBadge } from "@/components/shared/DangerBadge";
 import { DisclaimerBanner } from "@/components/shared/DisclaimerBanner";
-import { FishingBadge } from "@/components/shared/FishingBadge";
+import { FISHING_TIER_CLASSES, FISHING_TIER_LABELS, FishingBadge } from "@/components/shared/FishingBadge";
 import { UnverifiedBadge } from "@/components/shared/UnverifiedBadge";
 import { HeatmapGrid } from "@/components/heatmap/HeatmapGrid";
 import { HeatmapLegend } from "@/components/heatmap/HeatmapLegend";
+import { NowTimeline, TIMELINE_HOURS_BACK } from "@/components/timeline/NowTimeline";
+import { WindowSummaryList } from "@/components/timeline/WindowSummaryList";
 import { useLedgeConditions } from "@/hooks/useLedgeConditions";
 import { useLedges } from "@/hooks/useLedges";
-import { findDefaultHourIndex, getDefaultWindowIso, getUniqueSortedTimestamps } from "@/lib/time";
+import {
+  findDefaultHourIndex,
+  getDefaultWindowIso,
+  getUniqueSortedTimestamps,
+  nowHourIso,
+} from "@/lib/time";
+import type { DangerTier, FishingTier, LedgeCondition } from "@/lib/types";
+import { filterUpcomingWindows, summarizeTierWindows } from "@/lib/windows";
+
+const DANGER_NOTABLE_TIERS = new Set<DangerTier>(["caution", "dangerous"]);
+const BITE_NOTABLE_TIERS = new Set<FishingTier>(["good", "great"]);
 
 export function LedgeDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { fromIso, toIso } = useMemo(() => getDefaultWindowIso(), []);
+  // hoursBack extends the fetch window into the past so the now-timeline has
+  // real elapsed hours to show to the left of "now", not just forecast.
+  const { fromIso, toIso } = useMemo(() => getDefaultWindowIso(undefined, TIMELINE_HOURS_BACK), []);
 
   const ledgesQuery = useLedges();
   const conditionsQuery = useLedgeConditions(id ?? "", fromIso, toIso);
+  const conditions: LedgeCondition[] = conditionsQuery.data ?? [];
 
   const ledge = ledgesQuery.data?.find((l) => l.id === id);
 
   // Current-hour snapshot for the header badge — same "closest to now" logic the map's HourSlider defaults to.
   const currentCondition = useMemo(() => {
-    const data = conditionsQuery.data;
-    if (!data || data.length === 0) return undefined;
-    const hours = getUniqueSortedTimestamps(data);
+    if (conditions.length === 0) return undefined;
+    const hours = getUniqueSortedTimestamps(conditions);
     const ts = hours[findDefaultHourIndex(hours)];
-    return data.find((c) => c.ts === ts);
-  }, [conditionsQuery.data]);
+    return conditions.find((c) => c.ts === ts);
+  }, [conditions]);
+
+  const dangerWindows = useMemo(() => {
+    const windows = summarizeTierWindows(conditions, (c) => c.dangerTier, DANGER_NOTABLE_TIERS);
+    return filterUpcomingWindows(windows, nowHourIso());
+  }, [conditions]);
+
+  const biteWindows = useMemo(() => {
+    const windows = summarizeTierWindows(conditions, (c) => c.fishingTier, BITE_NOTABLE_TIERS);
+    return filterUpcomingWindows(windows, nowHourIso());
+  }, [conditions]);
 
   return (
     <div className="flex h-full flex-col">
@@ -83,8 +107,34 @@ export function LedgeDetailPage() {
           )}
           {conditionsQuery.data && (
             <>
-              <HeatmapGrid conditions={conditionsQuery.data} />
-              <HeatmapLegend />
+              <NowTimeline conditions={conditions} />
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <WindowSummaryList
+                  title="Dangerous times ahead"
+                  icon="⚠️"
+                  windows={dangerWindows}
+                  tierLabels={DANGER_TIER_LABELS}
+                  tierClasses={DANGER_TIER_CLASSES}
+                  emptyMessage="No caution/dangerous hours forecast in this window."
+                />
+                <WindowSummaryList
+                  title="Best bite windows ahead"
+                  icon="🎣"
+                  windows={biteWindows}
+                  tierLabels={FISHING_TIER_LABELS}
+                  tierClasses={FISHING_TIER_CLASSES}
+                  emptyMessage="No standout fishing-pressure windows forecast yet."
+                />
+              </div>
+
+              <div className="mt-2">
+                <h2 className="mb-2 text-sm font-semibold text-slate-700">Full 10-day forecast</h2>
+                <div className="flex flex-col gap-4">
+                  <HeatmapGrid conditions={conditions} />
+                  <HeatmapLegend />
+                </div>
+              </div>
             </>
           )}
         </div>

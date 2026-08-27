@@ -42,6 +42,12 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-AU", {
   timeZoneName: "short",
 });
 
+const hourLabelFormatter = new Intl.DateTimeFormat("en-AU", {
+  timeZone: SYDNEY_TZ,
+  hour: "numeric",
+  hour12: true,
+});
+
 /** `'YYYY-MM-DD'` for the Sydney-local calendar day containing `tsIso`. */
 export function toSydneyDayKey(tsIso: string): string {
   // en-CA formats as YYYY-MM-DD.
@@ -66,6 +72,18 @@ export function formatSydneyDayLabel(dayKey: string): string {
 /** `'Wed 25 Aug, 3:00 pm AEST'`-style label for a full timestamp. */
 export function formatSydneyDateTime(tsIso: string): string {
   return dateTimeFormatter.format(new Date(tsIso));
+}
+
+/** `'3pm'`-style compact hour label, for the now-timeline's per-cell labels. */
+export function formatSydneyHourLabel(tsIso: string): string {
+  return hourLabelFormatter.format(new Date(tsIso)).replace(/\s+/g, "").toLowerCase();
+}
+
+/** `tsIso` shifted by a (possibly negative) number of hours, as an ISO string. */
+export function addHoursIso(tsIso: string, hours: number): string {
+  const date = new Date(tsIso);
+  date.setUTCHours(date.getUTCHours() + hours);
+  return date.toISOString();
 }
 
 /**
@@ -112,15 +130,26 @@ export function nowHourIso(): string {
   return now.toISOString();
 }
 
-/** Default `{ fromIso, toIso }` fetch window: now (top of hour) through `days` days later. */
-export function getDefaultWindowIso(days: number = DEFAULT_WINDOW_DAYS): {
+/**
+ * Default `{ fromIso, toIso }` fetch window: now (top of hour) through `days`
+ * days later. `hoursBack` optionally extends `fromIso` into the past (e.g.
+ * for the ledge detail page's now-centered timeline, which needs some
+ * already-elapsed hours to show alongside the forecast) — 0 preserves the
+ * original "starts exactly now" behavior for existing callers.
+ */
+export function getDefaultWindowIso(
+  days: number = DEFAULT_WINDOW_DAYS,
+  hoursBack: number = 0,
+): {
   fromIso: string;
   toIso: string;
 } {
-  const fromIso = nowHourIso();
-  const to = new Date(fromIso);
+  const nowHour = nowHourIso();
+  const from = new Date(nowHour);
+  from.setUTCHours(from.getUTCHours() - hoursBack);
+  const to = new Date(nowHour);
   to.setUTCDate(to.getUTCDate() + days);
-  return { fromIso, toIso: to.toISOString() };
+  return { fromIso: from.toISOString(), toIso: to.toISOString() };
 }
 
 /**

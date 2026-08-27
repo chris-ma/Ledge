@@ -1,12 +1,13 @@
 import type { DangerTier } from "@/lib/types";
 
-const TIER_CLASSES: Record<DangerTier, string> = {
+/** Exported for reuse anywhere else a DangerTier needs the same colour language (e.g. WindowSummaryList). */
+export const DANGER_TIER_CLASSES: Record<DangerTier, string> = {
   normal: "bg-emerald-100 text-emerald-800 border-emerald-300",
   caution: "bg-amber-100 text-amber-800 border-amber-300",
   dangerous: "bg-red-100 text-red-800 border-red-300",
 };
 
-const TIER_LABELS: Record<DangerTier, string> = {
+export const DANGER_TIER_LABELS: Record<DangerTier, string> = {
   normal: "\u{1F7E2} Normal",
   caution: "\u{1F7E1} Caution",
   dangerous: "\u{1F534} Dangerous",
@@ -24,9 +25,9 @@ export function DangerBadge({ tier }: { tier: DangerTier | null }) {
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${TIER_CLASSES[tier]}`}
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${DANGER_TIER_CLASSES[tier]}`}
     >
-      {TIER_LABELS[tier]}
+      {DANGER_TIER_LABELS[tier]}
     </span>
   );
 }

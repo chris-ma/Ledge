@@ -1,13 +1,14 @@
 import type { FishingTier } from "@/lib/types";
 
-const TIER_CLASSES: Record<FishingTier, string> = {
+/** Exported for reuse anywhere else a FishingTier needs the same colour language (e.g. WindowSummaryList). */
+export const FISHING_TIER_CLASSES: Record<FishingTier, string> = {
   poor: "bg-slate-100 text-slate-600 border-slate-300",
   fair: "bg-sky-100 text-sky-800 border-sky-300",
   good: "bg-teal-100 text-teal-800 border-teal-300",
   great: "bg-indigo-100 text-indigo-800 border-indigo-300",
 };
 
-const TIER_LABELS: Record<FishingTier, string> = {
+export const FISHING_TIER_LABELS: Record<FishingTier, string> = {
   poor: "\u{1F3A3} Poor",
   fair: "\u{1F3A3} Fair",
   good: "\u{1F3A3} Good",
@@ -28,9 +29,9 @@ export function FishingBadge({ tier }: { tier: FishingTier | null }) {
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${TIER_CLASSES[tier]}`}
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${FISHING_TIER_CLASSES[tier]}`}
     >
-      {TIER_LABELS[tier]}
+      {FISHING_TIER_LABELS[tier]}
     </span>
   );
 }
