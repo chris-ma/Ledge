@@ -1,14 +1,13 @@
 import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AttributionFooter } from "@/components/shared/AttributionFooter";
-import { DANGER_TIER_CLASSES, DANGER_TIER_LABELS, DangerBadge } from "@/components/shared/DangerBadge";
+import { DangerBadge } from "@/components/shared/DangerBadge";
 import { DisclaimerBanner } from "@/components/shared/DisclaimerBanner";
-import { FISHING_TIER_CLASSES, FISHING_TIER_LABELS, FishingBadge } from "@/components/shared/FishingBadge";
+import { FishingBadge } from "@/components/shared/FishingBadge";
 import { UnverifiedBadge } from "@/components/shared/UnverifiedBadge";
 import { HeatmapGrid } from "@/components/heatmap/HeatmapGrid";
 import { HeatmapLegend } from "@/components/heatmap/HeatmapLegend";
-import { NowTimeline, TIMELINE_HOURS_BACK } from "@/components/timeline/NowTimeline";
-import { WindowSummaryList } from "@/components/timeline/WindowSummaryList";
+import { NowTimeline, TIMELINE_LOOKBACK_HOURS } from "@/components/timeline/NowTimeline";
 import { useLedgeConditions } from "@/hooks/useLedgeConditions";
 import { useLedges } from "@/hooks/useLedges";
 import {
@@ -27,7 +26,7 @@ export function LedgeDetailPage() {
   const { id } = useParams<{ id: string }>();
   // hoursBack extends the fetch window into the past so the now-timeline has
   // real elapsed hours to show to the left of "now", not just forecast.
-  const { fromIso, toIso } = useMemo(() => getDefaultWindowIso(undefined, TIMELINE_HOURS_BACK), []);
+  const { fromIso, toIso } = useMemo(() => getDefaultWindowIso(undefined, TIMELINE_LOOKBACK_HOURS), []);
 
   const ledgesQuery = useLedges();
   const conditionsQuery = useLedgeConditions(id ?? "", fromIso, toIso);
@@ -107,26 +106,7 @@ export function LedgeDetailPage() {
           )}
           {conditionsQuery.data && (
             <>
-              <NowTimeline conditions={conditions} />
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <WindowSummaryList
-                  title="Dangerous times ahead"
-                  icon="⚠️"
-                  windows={dangerWindows}
-                  tierLabels={DANGER_TIER_LABELS}
-                  tierClasses={DANGER_TIER_CLASSES}
-                  emptyMessage="No caution/dangerous hours forecast in this window."
-                />
-                <WindowSummaryList
-                  title="Best bite windows ahead"
-                  icon="🎣"
-                  windows={biteWindows}
-                  tierLabels={FISHING_TIER_LABELS}
-                  tierClasses={FISHING_TIER_CLASSES}
-                  emptyMessage="No standout fishing-pressure windows forecast yet."
-                />
-              </div>
+              <NowTimeline conditions={conditions} dangerWindows={dangerWindows} biteWindows={biteWindows} />
 
               <div className="mt-2">
                 <h2 className="mb-2 text-sm font-semibold text-slate-700">Full 10-day forecast</h2>

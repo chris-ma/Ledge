@@ -8,6 +8,14 @@ export const FISHING_TIER_CLASSES: Record<FishingTier, string> = {
   great: "bg-indigo-100 text-indigo-800 border-indigo-300",
 };
 
+/** Solid fill for a timeline block (as opposed to the pale pill-badge colours above). */
+export const FISHING_TIER_BLOCK_CLASSES: Record<FishingTier, string> = {
+  poor: "bg-slate-300",
+  fair: "bg-sky-400",
+  good: "bg-teal-400",
+  great: "bg-indigo-500",
+};
+
 export const FISHING_TIER_LABELS: Record<FishingTier, string> = {
   poor: "\u{1F3A3} Poor",
   fair: "\u{1F3A3} Fair",

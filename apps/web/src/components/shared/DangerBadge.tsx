@@ -7,6 +7,13 @@ export const DANGER_TIER_CLASSES: Record<DangerTier, string> = {
   dangerous: "bg-red-100 text-red-800 border-red-300",
 };
 
+/** Solid fill for a timeline block (as opposed to the pale pill-badge colours above). */
+export const DANGER_TIER_BLOCK_CLASSES: Record<DangerTier, string> = {
+  normal: "bg-emerald-400",
+  caution: "bg-amber-400",
+  dangerous: "bg-red-500",
+};
+
 export const DANGER_TIER_LABELS: Record<DangerTier, string> = {
   normal: "\u{1F7E2} Normal",
   caution: "\u{1F7E1} Caution",

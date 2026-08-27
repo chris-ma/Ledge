@@ -1,103 +1,173 @@
 import { useEffect, useMemo, useRef } from "react";
-import { buildConditionTooltip } from "@/components/heatmap/HeatmapCell";
+import { DANGER_TIER_BLOCK_CLASSES, DANGER_TIER_LABELS } from "@/components/shared/DangerBadge";
+import { FISHING_TIER_BLOCK_CLASSES, FISHING_TIER_LABELS } from "@/components/shared/FishingBadge";
 import { useNowTick } from "@/hooks/useNowTick";
-import { DANGER_BORDER_CLASS, DANGER_HATCH_BACKGROUND, lliToColor } from "@/lib/colorScale";
-import { findDefaultHourIndex, formatSydneyHourLabel, getUniqueSortedTimestamps } from "@/lib/time";
-import type { LedgeCondition } from "@/lib/types";
+import {
+  findDefaultHourIndex,
+  formatSydneyDateTime,
+  formatSydneyDayLabel,
+  getUniqueSortedTimestamps,
+  toSydneyDayKey,
+} from "@/lib/time";
+import type { DangerTier, FishingTier, LedgeCondition } from "@/lib/types";
+import type { TierWindow } from "@/lib/windows";
 
-/** How far back/forward the strip reaches around "now" — together, about a day's span. */
-export const TIMELINE_HOURS_BACK = 12;
-export const TIMELINE_HOURS_FORWARD = 12;
+/** How far back the fetch window reaches so the timeline has real elapsed hours to its left. */
+export const TIMELINE_LOOKBACK_HOURS = 12;
 
-function isDangerLike(condition: LedgeCondition | null): boolean {
-  return condition?.dangerTier != null && condition.dangerTier !== "normal";
+const PX_PER_HOUR = 6;
+const TRACK_HEIGHT = 14;
+
+interface DayBoundary {
+  index: number;
+  label: string;
+}
+
+function computeDayBoundaries(hours: readonly string[]): DayBoundary[] {
+  const boundaries: DayBoundary[] = [];
+  let lastDayKey: string | null = null;
+  hours.forEach((ts, i) => {
+    const dayKey = toSydneyDayKey(ts);
+    if (dayKey !== lastDayKey) {
+      boundaries.push({ index: i, label: formatSydneyDayLabel(dayKey) });
+      lastDayKey = dayKey;
+    }
+  });
+  return boundaries;
+}
+
+interface TimelineTrackProps<T extends string> {
+  icon: string;
+  label: string;
+  windows: TierWindow<T>[];
+  tsToIndex: Map<string, number>;
+  blockClasses: Record<T, string>;
+  tierLabels: Record<T, string>;
+}
+
+function TimelineTrack<T extends string>({
+  icon,
+  label,
+  windows,
+  tsToIndex,
+  blockClasses,
+  tierLabels,
+}: TimelineTrackProps<T>) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-16 shrink-0 text-[11px] text-slate-500">
+        {icon} {label}
+      </span>
+      <div className="relative flex-1 rounded-full bg-slate-100" style={{ height: TRACK_HEIGHT }}>
+        {windows.map((w) => {
+          const startIndex = tsToIndex.get(w.startTs);
+          const endIndex = tsToIndex.get(w.endTs);
+          if (startIndex === undefined || endIndex === undefined) return null;
+          const left = startIndex * PX_PER_HOUR;
+          const width = Math.max(PX_PER_HOUR, (endIndex - startIndex + 1) * PX_PER_HOUR);
+          return (
+            <div
+              key={`${w.startTs}-${w.tier}`}
+              className={`absolute top-0 rounded-full ${blockClasses[w.tier]}`}
+              style={{ left, width, height: TRACK_HEIGHT }}
+              title={`${tierLabels[w.tier]}: ${formatSydneyDateTime(w.startTs)} – ${formatSydneyDateTime(
+                w.endTs,
+              )}`}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 interface NowTimelineProps {
   conditions: LedgeCondition[];
+  dangerWindows: TierWindow<DangerTier>[];
+  biteWindows: TierWindow<FishingTier>[];
 }
 
 /**
- * A horizontally-scrollable strip of hour cells centered on "now" — past
- * hours to the left, future to the right, a fixed center marker pins "now"
- * in the middle. As real time advances (checked every ~60s via useNowTick,
- * independent of the data refetch interval), the strip re-centers itself,
- * so it reads as continuously shifting right-to-left rather than a static
- * multi-day grid.
+ * Two horizontal lines (danger, bite) spanning the whole fetched forecast,
+ * with a fixed "NOW" marker centered in the viewport and colored blocks
+ * wherever a notable window falls — no per-hour boxes, no boxed list below
+ * it. Auto-scrolls so "now" sits under the marker on load and whenever the
+ * underlying "now" hour advances; scrolling right reveals the rest of the
+ * forecast, scrolling left reveals the recent past.
  */
-export function NowTimeline({ conditions }: NowTimelineProps) {
+export function NowTimeline({ conditions, dangerWindows, biteWindows }: NowTimelineProps) {
   useNowTick();
 
   const hours = useMemo(() => getUniqueSortedTimestamps(conditions), [conditions]);
-  const byTs = useMemo(() => {
-    const map = new Map<string, LedgeCondition>();
-    for (const condition of conditions) map.set(condition.ts, condition);
+  const tsToIndex = useMemo(() => {
+    const map = new Map<string, number>();
+    hours.forEach((ts, i) => map.set(ts, i));
     return map;
-  }, [conditions]);
+  }, [hours]);
+  const dayBoundaries = useMemo(() => computeDayBoundaries(hours), [hours]);
 
   const nowIndex = findDefaultHourIndex(hours);
-  const windowStart = Math.max(0, nowIndex - TIMELINE_HOURS_BACK);
-  const windowEnd = Math.min(hours.length, nowIndex + TIMELINE_HOURS_FORWARD + 1);
-  const windowHours = hours.slice(windowStart, windowEnd);
-  const nowIndexInWindow = nowIndex - windowStart;
   const nowTs = hours[nowIndex] as string | undefined;
+  const totalWidth = hours.length * PX_PER_HOUR;
+  const nowOffset = nowIndex * PX_PER_HOUR + PX_PER_HOUR / 2;
 
-  const cellRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    cellRefs.current[nowIndexInWindow]?.scrollIntoView({
-      inline: "center",
-      block: "nearest",
-      behavior: "smooth",
-    });
-    // Re-run whenever the underlying "now" hour changes (data reload or the
-    // clock ticking past the hour) or the window itself is repositioned.
+    const el = scrollRef.current;
+    if (!el) return;
+    const target = Math.max(0, Math.min(totalWidth - el.clientWidth, nowOffset - el.clientWidth / 2));
+    el.scrollTo({ left: target, behavior: "smooth" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nowTs, nowIndexInWindow]);
+  }, [nowTs, totalWidth]);
 
-  if (windowHours.length === 0) {
+  if (hours.length === 0) {
     return <p className="text-sm text-slate-500">Loading timeline…</p>;
   }
 
   return (
-    <div className="relative rounded-lg border border-slate-200 bg-white py-3 shadow-sm">
+    <div className="relative rounded-lg border border-slate-200 bg-white px-2 py-3 shadow-sm">
       <div
-        className="pointer-events-none absolute inset-y-1 left-1/2 z-10 w-0.5 -translate-x-1/2 rounded bg-ocean-600/70"
+        className="pointer-events-none absolute inset-y-1 left-1/2 z-10 flex w-0.5 -translate-x-1/2 flex-col items-center rounded bg-ocean-600/70"
         aria-hidden="true"
-      />
-      <div className="flex gap-1 overflow-x-auto px-[50%] scroll-smooth" style={{ scrollSnapType: "x proximity" }}>
-        {windowHours.map((ts, i) => {
-          const condition = byTs.get(ts) ?? null;
-          const isNow = i === nowIndexInWindow;
-          const danger = isDangerLike(condition);
+      >
+        <span className="-mt-4 whitespace-nowrap rounded bg-ocean-600 px-1 text-[10px] font-bold text-white">
+          NOW
+        </span>
+      </div>
 
-          return (
-            <div
-              key={ts}
-              ref={(el) => {
-                cellRefs.current[i] = el;
-              }}
-              className="flex w-9 shrink-0 flex-col items-center gap-1"
-              style={{ scrollSnapAlign: isNow ? "center" : "none" }}
-            >
+      <div ref={scrollRef} className="overflow-x-auto pl-16">
+        <div className="relative" style={{ width: totalWidth }}>
+          <div className="relative h-4 border-b border-slate-100 text-[10px] text-slate-400">
+            {dayBoundaries.map((b) => (
               <span
-                className={`text-[10px] ${isNow ? "font-bold text-ocean-700" : "text-slate-400"}`}
+                key={b.index}
+                className="absolute top-0 whitespace-nowrap border-l border-slate-200 pl-1"
+                style={{ left: b.index * PX_PER_HOUR }}
               >
-                {isNow ? "NOW" : formatSydneyHourLabel(ts)}
+                {b.label}
               </span>
-              <div
-                className={`h-10 w-8 rounded-sm ${danger ? DANGER_BORDER_CLASS : "border border-slate-200"} ${
-                  isNow ? "ring-2 ring-ocean-600 ring-offset-1" : ""
-                }`}
-                style={{
-                  backgroundColor: lliToColor(condition?.lli ?? null),
-                  backgroundImage: danger ? DANGER_HATCH_BACKGROUND : undefined,
-                }}
-                title={condition ? buildConditionTooltip(condition) : "No data for this hour"}
-              />
-            </div>
-          );
-        })}
+            ))}
+          </div>
+          <div className="flex flex-col gap-2 py-2">
+            <TimelineTrack
+              icon="⚠️"
+              label="Danger"
+              windows={dangerWindows}
+              tsToIndex={tsToIndex}
+              blockClasses={DANGER_TIER_BLOCK_CLASSES}
+              tierLabels={DANGER_TIER_LABELS}
+            />
+            <TimelineTrack
+              icon="🎣"
+              label="Bite"
+              windows={biteWindows}
+              tsToIndex={tsToIndex}
+              blockClasses={FISHING_TIER_BLOCK_CLASSES}
+              tierLabels={FISHING_TIER_LABELS}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
