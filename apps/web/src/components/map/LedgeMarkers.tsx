@@ -1,10 +1,8 @@
-import type { ReactElement } from "react";
 import { CircleMarker, Tooltip } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 import { DangerBadge } from "@/components/shared/DangerBadge";
 import { FishingBadge } from "@/components/shared/FishingBadge";
 import type { Ledge, LedgeCondition } from "@/lib/types";
-import { lliToColor } from "@/lib/colorScale";
 
 interface LedgeMarkersProps {
   ledges: Ledge[];
@@ -12,68 +10,49 @@ interface LedgeMarkersProps {
   conditionsByLedgeId: Map<string, LedgeCondition>;
 }
 
-const FILL_RADIUS = 9;
-const DANGER_RING_RADIUS = 15;
+// No visible dot or danger ring — the map's only visible per-ledge read is
+// now PressureHeatmap's zones. This stays invisible (0 opacity/fill) purely
+// as a tap/hover target so click-through to a ledge's detail page and the
+// info tooltip keep working without drawing a "point" on the map.
+const HIT_RADIUS = 12;
 
-/**
- * One CircleMarker per ledge, colored by LLI. Ledges whose condition at the
- * selected hour has a non-normal dangerTier get a second, larger,
- * stroke-only red CircleMarker layered underneath as a ring — react-leaflet
- * has no native marker glow, so a second marker is the pragmatic way to draw
- * a ring independent of the fill color.
- */
+/** Invisible per-ledge tap targets — click navigates to the ledge detail page, hover shows the info tooltip. */
 export function LedgeMarkers({ ledges, conditionsByLedgeId }: LedgeMarkersProps) {
   const navigate = useNavigate();
-  const markers: ReactElement[] = [];
 
-  for (const ledge of ledges) {
-    const condition = conditionsByLedgeId.get(ledge.id);
-    const lli = condition?.lli ?? null;
-    const position: [number, number] = [ledge.lat, ledge.lon];
-    const isDangerLike = condition?.dangerTier != null && condition.dangerTier !== "normal";
+  return (
+    <>
+      {ledges.map((ledge) => {
+        const condition = conditionsByLedgeId.get(ledge.id);
+        const lli = condition?.lli ?? null;
+        const position: [number, number] = [ledge.lat, ledge.lon];
 
-    if (isDangerLike) {
-      markers.push(
-        <CircleMarker
-          key={`${ledge.id}-ring`}
-          center={position}
-          radius={DANGER_RING_RADIUS}
-          color="#dc2626"
-          weight={3}
-          fill={false}
-          interactive={false}
-        />,
-      );
-    }
-
-    markers.push(
-      <CircleMarker
-        key={ledge.id}
-        center={position}
-        radius={FILL_RADIUS}
-        color="#1e293b"
-        weight={1}
-        fillColor={lliToColor(lli)}
-        fillOpacity={0.9}
-        eventHandlers={{
-          click: () => navigate(`/ledges/${ledge.id}`),
-        }}
-      >
-        <Tooltip direction="top" offset={[0, -10]}>
-          <div className="flex flex-col gap-1 text-xs">
-            <div className="font-semibold">{ledge.name}</div>
-            <div>{ledge.area}</div>
-            <div>LLI: {lli === null ? "no data" : Math.round(lli)}</div>
-            <div className="flex items-center gap-1">
-              <DangerBadge tier={condition?.dangerTier ?? null} />
-              <FishingBadge tier={condition?.fishingTier ?? null} />
-            </div>
-            {!ledge.heightVerified && <div>Unverified location/height</div>}
-          </div>
-        </Tooltip>
-      </CircleMarker>,
-    );
-  }
-
-  return <>{markers}</>;
+        return (
+          <CircleMarker
+            key={ledge.id}
+            center={position}
+            radius={HIT_RADIUS}
+            opacity={0}
+            fillOpacity={0}
+            eventHandlers={{
+              click: () => navigate(`/ledges/${ledge.id}`),
+            }}
+          >
+            <Tooltip direction="top" offset={[0, -10]}>
+              <div className="flex flex-col gap-1 text-xs">
+                <div className="font-semibold">{ledge.name}</div>
+                <div>{ledge.area}</div>
+                <div>LLI: {lli === null ? "no data" : Math.round(lli)}</div>
+                <div className="flex items-center gap-1">
+                  <DangerBadge tier={condition?.dangerTier ?? null} />
+                  <FishingBadge tier={condition?.fishingTier ?? null} />
+                </div>
+                {!ledge.heightVerified && <div>Unverified location/height</div>}
+              </div>
+            </Tooltip>
+          </CircleMarker>
+        );
+      })}
+    </>
+  );
 }

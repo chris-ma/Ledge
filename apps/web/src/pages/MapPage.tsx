@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import { AttributionFooter } from "@/components/shared/AttributionFooter";
-import { DisclaimerBanner } from "@/components/shared/DisclaimerBanner";
 import { HeatmapLegend } from "@/components/heatmap/HeatmapLegend";
 import { HourSlider } from "@/components/map/HourSlider";
 import { LedgeMarkers } from "@/components/map/LedgeMarkers";
@@ -43,8 +42,6 @@ export function MapPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <DisclaimerBanner />
-
       <div className="flex flex-1 flex-col gap-3 overflow-hidden p-3 md:flex-row">
         <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-lg border border-slate-200">
           {isError && (
