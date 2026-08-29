@@ -1,4 +1,12 @@
-import { DANGER_BORDER_CLASS, DANGER_HATCH_BACKGROUND, LEGEND_STOPS, NULL_LLI_COLOR, lliToColor } from "@/lib/colorScale";
+import {
+  DANGER_BORDER_CLASS,
+  DANGER_HATCH_BACKGROUND,
+  LEGEND_STOPS,
+  NULL_LLI_COLOR,
+  PRESSURE_LEGEND_STOPS,
+  lliToColor,
+  pressureToHeatColor,
+} from "@/lib/colorScale";
 
 /** Explains the LLI color scale, the null/no-data grey, and the danger hatch. */
 export function HeatmapLegend() {
@@ -31,6 +39,22 @@ export function HeatmapLegend() {
             style={{ backgroundColor: lliToColor(60), backgroundImage: DANGER_HATCH_BACKGROUND }}
           />
           <span>Caution / dangerous hour (wave-runup estimate) — independent of the LLI colour</span>
+        </div>
+      </div>
+      <div className="border-t border-slate-100 pt-2">
+        <div className="mb-1 font-medium text-slate-700">Fishing Pressure (map glow)</div>
+        <div className="flex items-center gap-2">
+          <span>0</span>
+          <div className="flex h-4 flex-1 overflow-hidden rounded">
+            {PRESSURE_LEGEND_STOPS.map((stop) => (
+              <div key={stop} className="h-full flex-1" style={{ backgroundColor: pressureToHeatColor(stop) }} />
+            ))}
+          </div>
+          <span>100</span>
+        </div>
+        <div className="mt-1 text-[11px] text-slate-500">
+          Bigger, redder glow = more swell/tide pushing onto the ledge right now — a fishing-opportunity read,
+          independent of the danger flag above.
         </div>
       </div>
     </div>

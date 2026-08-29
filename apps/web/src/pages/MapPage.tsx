@@ -5,6 +5,7 @@ import { DisclaimerBanner } from "@/components/shared/DisclaimerBanner";
 import { HeatmapLegend } from "@/components/heatmap/HeatmapLegend";
 import { HourSlider } from "@/components/map/HourSlider";
 import { LedgeMarkers } from "@/components/map/LedgeMarkers";
+import { PressureGlow } from "@/components/map/PressureGlow";
 import { useConditionsAtRange } from "@/hooks/useConditionsAtRange";
 import { useLedges } from "@/hooks/useLedges";
 import { findDefaultHourIndex, getDefaultWindowIso, getUniqueSortedTimestamps } from "@/lib/time";
@@ -57,13 +58,21 @@ export function MapPage() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {ledgesQuery.data && (
-              <LedgeMarkers ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
+              <>
+                <PressureGlow ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
+                <LedgeMarkers ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
+              </>
             )}
           </MapContainer>
+
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1000] p-3">
+            <div className="pointer-events-auto mx-auto max-w-md">
+              <HourSlider hours={hours} index={hourIndex} onChange={setManualIndex} />
+            </div>
+          </div>
         </div>
 
         <div className="flex w-full flex-col gap-3 md:w-80 md:shrink-0">
-          <HourSlider hours={hours} index={hourIndex} onChange={setManualIndex} />
           <HeatmapLegend />
           {isLoading && <p className="text-sm text-slate-500">Loading conditions…</p>}
           {!isLoading && !isError && hours.length === 0 && (

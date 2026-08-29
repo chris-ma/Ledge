@@ -7,16 +7,21 @@ interface HourSliderProps {
   onChange: (index: number) => void;
 }
 
-/** Lets the user pick an hour within the fetched window; indexes into already-fetched data rather than refetching. */
+/**
+ * Lets the user scrub through the fetched window's hours — indexes into
+ * already-fetched data rather than refetching. Rendered as a translucent bar
+ * docked to the bottom of the map itself, so it needs to stay legible over
+ * varying map tile colors underneath it.
+ */
 export function HourSlider({ hours, index, onChange }: HourSliderProps) {
   const selected = hours[index];
   const hasHours = hours.length > 0;
 
   return (
-    <div className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
-      <div className="flex items-center justify-between gap-2 text-sm font-medium text-slate-700">
+    <div className="flex flex-col gap-1 rounded-lg bg-slate-900/80 px-4 py-3 text-white shadow-lg backdrop-blur-sm">
+      <div className="flex items-center justify-between gap-2 text-sm font-medium">
         <span>Hour</span>
-        <span className="text-right text-ocean-600">
+        <span className="text-right text-ocean-300">
           {selected ? formatSydneyDateTime(selected) : "No data"}
         </span>
       </div>
@@ -28,10 +33,10 @@ export function HourSlider({ hours, index, onChange }: HourSliderProps) {
         value={hasHours ? index : 0}
         disabled={!hasHours}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-ocean-600 disabled:opacity-40"
+        className="w-full accent-ocean-400 disabled:opacity-40"
         aria-label="Select hour"
       />
-      <div className="flex justify-between text-[10px] text-slate-400">
+      <div className="flex justify-between text-[10px] text-slate-300">
         <span>{hasHours ? formatSydneyDateTime(hours[0]) : "—"}</span>
         <span>{hasHours ? formatSydneyDateTime(hours[hours.length - 1]) : "—"}</span>
       </div>
