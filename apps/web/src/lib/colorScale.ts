@@ -90,14 +90,5 @@ export function pressureToHeatColor(pressure: number): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-const PRESSURE_GLOW_MIN_PX = 36;
-const PRESSURE_GLOW_MAX_PX = 106;
-
-/** Glow blob diameter (px) for the map's pressure layer, scaled by intensity. */
-export function pressureToGlowSize(pressure: number): number {
-  const clamped = Math.min(100, Math.max(0, pressure));
-  return PRESSURE_GLOW_MIN_PX + (clamped / 100) * (PRESSURE_GLOW_MAX_PX - PRESSURE_GLOW_MIN_PX);
-}
-
 /** Evenly-spaced sample values for rendering the pressure legend gradient. */
 export const PRESSURE_LEGEND_STOPS: readonly number[] = [0, 33, 66, 100];

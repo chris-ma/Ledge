@@ -42,7 +42,7 @@ export function HeatmapLegend() {
         </div>
       </div>
       <div className="border-t border-slate-100 pt-2">
-        <div className="mb-1 font-medium text-slate-700">Fishing Pressure (map glow)</div>
+        <div className="mb-1 font-medium text-slate-700">Fishing Pressure (map heat zones)</div>
         <div className="flex items-center gap-2">
           <span>0</span>
           <div className="flex h-4 flex-1 overflow-hidden rounded">
@@ -53,8 +53,9 @@ export function HeatmapLegend() {
           <span>100</span>
         </div>
         <div className="mt-1 text-[11px] text-slate-500">
-          Bigger, redder glow = more swell/tide pushing onto the ledge right now — a fishing-opportunity read,
-          independent of the danger flag above.
+          Redder zones = more swell/tide pushing onto the ledge right now — a fishing-opportunity read, independent
+          of the danger flag above. Zones trace each ledge's coastline and blend together where nearby ledges
+          overlap.
         </div>
       </div>
     </div>

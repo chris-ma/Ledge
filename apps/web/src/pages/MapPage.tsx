@@ -5,7 +5,7 @@ import { DisclaimerBanner } from "@/components/shared/DisclaimerBanner";
 import { HeatmapLegend } from "@/components/heatmap/HeatmapLegend";
 import { HourSlider } from "@/components/map/HourSlider";
 import { LedgeMarkers } from "@/components/map/LedgeMarkers";
-import { PressureGlow } from "@/components/map/PressureGlow";
+import { PressureHeatmap } from "@/components/map/PressureHeatmap";
 import { useConditionsAtRange } from "@/hooks/useConditionsAtRange";
 import { useLedges } from "@/hooks/useLedges";
 import { findDefaultHourIndex, getDefaultWindowIso, getUniqueSortedTimestamps } from "@/lib/time";
@@ -59,7 +59,7 @@ export function MapPage() {
             />
             {ledgesQuery.data && (
               <>
-                <PressureGlow ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
+                <PressureHeatmap ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
                 <LedgeMarkers ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
               </>
             )}
