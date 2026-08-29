@@ -4,6 +4,7 @@
 // height_verified stays false on every row until someone checks them
 // against the real platform.
 import "dotenv/config";
+import { fileURLToPath } from "url";
 import { db } from "./client.js";
 import { ledges, type NewLedge } from "./schema.js";
 
@@ -292,7 +293,8 @@ const SEED_LEDGES: NewLedge[] = [
   },
 ];
 
-async function main() {
+/** Upserts every seed ledge. Exported so both the CLI entrypoint below and a one-off admin endpoint can reuse it without duplicating the upsert logic. */
+export async function seedLedges(): Promise<number> {
   for (const ledge of SEED_LEDGES) {
     await db
       .insert(ledges)
@@ -317,9 +319,13 @@ async function main() {
     console.log(`Upserted ${ledge.name}`);
   }
   console.log(`Seeded ${SEED_LEDGES.length} ledges.`);
+  return SEED_LEDGES.length;
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Only run as a CLI script (`npm run db:seed`), not when imported by another module.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  seedLedges().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
