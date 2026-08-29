@@ -53,6 +53,11 @@ export const ledges = pgTable(
     // Estimated from general geography, not surveyed on-site. The frontend
     // must visibly flag any ledge where this is false — see UnverifiedBadge.
     heightVerified: boolean("height_verified").notNull().default(false),
+    // True for a ledge inside a sheltered harbour, where ocean swell doesn't
+    // reach — Fishing Pressure for these ledges is computed from tide alone
+    // rather than the default swell+tide blend. See
+    // server/model/fishingPressure.ts's sheltered branch.
+    sheltered: boolean("sheltered").notNull().default(false),
     notes: text("notes"),
     geog: geographyPoint("geog").generatedAlwaysAs(
       sql`ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography`,

@@ -3,6 +3,7 @@ import { TIDE_CURRENT_PRESSURE_REF_MAX_MS } from "./constants.js";
 import {
   computeFishingPressureForHour,
   computeFishingPressureIndex,
+  computeFishingPressureIndexTideOnly,
   computeTideCurrentDirFromDeg,
   computeTideCurrentSpeedMs,
   computeTidePressure,
@@ -61,6 +62,20 @@ describe("computeFishingPressureIndex", () => {
   });
 });
 
+describe("computeFishingPressureIndexTideOnly", () => {
+  it("is 0 when tide pressure is 0", () => {
+    expect(computeFishingPressureIndexTideOnly(0)).toBe(0);
+  });
+
+  it("saturates at 100 at/above the tide reference max, unlike the blended formula's 50 cap", () => {
+    expect(computeFishingPressureIndexTideOnly(TIDE_CURRENT_PRESSURE_REF_MAX_MS)).toBe(100);
+  });
+
+  it("is half at half the reference max", () => {
+    expect(computeFishingPressureIndexTideOnly(TIDE_CURRENT_PRESSURE_REF_MAX_MS / 2)).toBe(50);
+  });
+});
+
 describe("fishingPressureToTier", () => {
   it.each([
     [0, "poor"],
@@ -98,4 +113,47 @@ describe("computeFishingPressureForHour", () => {
       expect(computeFishingPressureForHour({ ...baseInputs, [key]: null })).toBeNull();
     },
   );
+
+  describe("sheltered ledges", () => {
+    const shelteredInputs = { ...baseInputs, sheltered: true };
+
+    it("returns a result from tide alone when swell fields are null", () => {
+      const result = computeFishingPressureForHour({
+        ...shelteredInputs,
+        hsM: null,
+        tpS: null,
+        swellDirDeg: null,
+      });
+      expect(result).not.toBeNull();
+      expect(result?.fishingPressure).toBe(
+        computeFishingPressureIndexTideOnly(
+          computeTidePressure(
+            computeTideCurrentSpeedMs(baseInputs.tideCurrentUCmS, baseInputs.tideCurrentVCmS),
+            computeTideCurrentDirFromDeg(baseInputs.tideCurrentUCmS, baseInputs.tideCurrentVCmS),
+            baseInputs.facingBearingDeg,
+          ),
+        ),
+      );
+    });
+
+    it("still returns null when the tide current vector itself is missing", () => {
+      expect(
+        computeFishingPressureForHour({ ...shelteredInputs, tideCurrentUCmS: null }),
+      ).toBeNull();
+    });
+
+    it("scores higher than the blended (non-sheltered) formula for the same tide pressure, since it isn't diluted by a 0.5 swell weight", () => {
+      // u=-20,v=0 -> current flows due west, i.e. arrives FROM the east
+      // (90deg), squarely onto facingBearingDeg=90 -> nonzero tide pressure.
+      const pushingInputs = { ...baseInputs, tideCurrentUCmS: -20, tideCurrentVCmS: 0 };
+      const sheltered = computeFishingPressureForHour({ ...pushingInputs, sheltered: true });
+      const blendedWithNoSwell = computeFishingPressureForHour({
+        ...pushingInputs,
+        hsM: 0,
+        tpS: 1,
+        swellDirDeg: 90,
+      });
+      expect(sheltered!.fishingPressure).toBeGreaterThan(blendedWithNoSwell!.fishingPressure);
+    });
+  });
 });

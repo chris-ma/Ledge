@@ -16,6 +16,8 @@ export interface Ledge {
   isDeclaredHazard: boolean;
   /** false = estimated location/height, NOT surveyed — must be visibly flagged in the UI. */
   heightVerified: boolean;
+  /** True for a ledge inside a sheltered harbour — its Fishing Condition score is tide-only, not swell+tide. */
+  sheltered: boolean;
   notes: string | null;
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
@@ -42,7 +44,7 @@ export interface LedgeCondition {
   r2EstimateM: number | null;
   dangerFlag: boolean | null;
   dangerTier: DangerTier | null;
-  /** Tidal current (ODB/TPXO), independent of the LLI/danger safety model. */
+  /** Tidal current (ODB/TPXO), independent of the danger safety model. */
   tideCurrentSpeedMs: number | null;
   tideCurrentDirDeg: number | null;
   /** 0-100 Fishing Pressure Index, or null meaning "no data for this hour" — NEVER treat null as 0. */

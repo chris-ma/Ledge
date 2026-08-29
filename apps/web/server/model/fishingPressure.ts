@@ -59,6 +59,17 @@ export function computeFishingPressureIndex(swellPressure: number, tidePressure:
   return Math.round(combined * 100);
 }
 
+/**
+ * Fishing Pressure Index for a sheltered/harbour ledge: tide alone, full
+ * weight — ocean swell doesn't reach inside the harbour, so folding in a
+ * (near-zero, often unmeasured) swell term would just water down the score
+ * with noise rather than signal.
+ */
+export function computeFishingPressureIndexTideOnly(tidePressure: number): number {
+  const tideNorm = clamp(tidePressure / TIDE_CURRENT_PRESSURE_REF_MAX_MS, 0, 1);
+  return Math.round(tideNorm * 100);
+}
+
 export function fishingPressureToTier(fishingPressure: number): FishingTier {
   if (fishingPressure >= FISHING_GREAT_THRESHOLD) return "great";
   if (fishingPressure >= FISHING_GOOD_THRESHOLD) return "good";
@@ -73,6 +84,8 @@ export interface FishingPressureInputs {
   tideCurrentUCmS: number | null;
   tideCurrentVCmS: number | null;
   facingBearingDeg: number;
+  /** True for a ledge inside a sheltered harbour — see computeFishingPressureIndexTideOnly. */
+  sheltered?: boolean;
 }
 
 export interface FishingPressureResult {
@@ -82,28 +95,37 @@ export interface FishingPressureResult {
   fishingTier: FishingTier;
 }
 
-/** Returns null if any required input for this hour is missing — same "no
- * data, never a fabricated value" policy as computeLliForHour. */
+/**
+ * Returns null if any required input for this hour is missing — same "no
+ * data, never a fabricated value" policy as computeLliForHour. A sheltered
+ * ledge only needs the tide current vector: swell doesn't reach inside a
+ * harbour, so hsM/tpS/swellDirDeg being null there (as they often are —
+ * Open-Meteo's marine model doesn't reliably cover enclosed harbour water)
+ * doesn't block a result.
+ */
 export function computeFishingPressureForHour(
   inputs: FishingPressureInputs,
 ): FishingPressureResult | null {
-  const { hsM, tpS, swellDirDeg, tideCurrentUCmS, tideCurrentVCmS, facingBearingDeg } = inputs;
+  const { hsM, tpS, swellDirDeg, tideCurrentUCmS, tideCurrentVCmS, facingBearingDeg, sheltered } = inputs;
 
-  if (
-    hsM === null ||
-    tpS === null ||
-    swellDirDeg === null ||
-    tideCurrentUCmS === null ||
-    tideCurrentVCmS === null
-  ) {
+  if (tideCurrentUCmS === null || tideCurrentVCmS === null) {
     return null;
   }
 
-  const swellPressure = computeWaveLoad(hsM, tpS, swellDirDeg, facingBearingDeg);
   const tideCurrentSpeedMs = computeTideCurrentSpeedMs(tideCurrentUCmS, tideCurrentVCmS);
   const tideCurrentDirDeg = computeTideCurrentDirFromDeg(tideCurrentUCmS, tideCurrentVCmS);
   const tidePressure = computeTidePressure(tideCurrentSpeedMs, tideCurrentDirDeg, facingBearingDeg);
-  const fishingPressure = computeFishingPressureIndex(swellPressure, tidePressure);
+
+  let fishingPressure: number;
+  if (sheltered) {
+    fishingPressure = computeFishingPressureIndexTideOnly(tidePressure);
+  } else {
+    if (hsM === null || tpS === null || swellDirDeg === null) {
+      return null;
+    }
+    const swellPressure = computeWaveLoad(hsM, tpS, swellDirDeg, facingBearingDeg);
+    fishingPressure = computeFishingPressureIndex(swellPressure, tidePressure);
+  }
 
   return {
     tideCurrentSpeedMs,

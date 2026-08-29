@@ -134,6 +134,7 @@ export async function computeAndUpsertForLedge(ledge: Ledge): Promise<ComputeAnd
       tideCurrentUCmS: hour.tideCurrentUCmS,
       tideCurrentVCmS: hour.tideCurrentVCmS,
       facingBearingDeg: ledge.facingBearing,
+      sheltered: ledge.sheltered,
     });
 
     return {

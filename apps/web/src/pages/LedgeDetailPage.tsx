@@ -75,7 +75,10 @@ export function LedgeDetailPage() {
               <DangerBadge tier={currentCondition.dangerTier} />
               <FishingBadge tier={currentCondition.fishingTier} />
               <span>
-                LLI {currentCondition.lli === null ? "no data" : Math.round(currentCondition.lli)}
+                Fishing condition{" "}
+                {currentCondition.fishingPressure === null
+                  ? "no data"
+                  : Math.round(currentCondition.fishingPressure)}
               </span>
             </div>
           )}

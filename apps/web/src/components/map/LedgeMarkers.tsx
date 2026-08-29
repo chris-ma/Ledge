@@ -24,7 +24,7 @@ export function LedgeMarkers({ ledges, conditionsByLedgeId }: LedgeMarkersProps)
     <>
       {ledges.map((ledge) => {
         const condition = conditionsByLedgeId.get(ledge.id);
-        const lli = condition?.lli ?? null;
+        const fishingPressure = condition?.fishingPressure ?? null;
         const position: [number, number] = [ledge.lat, ledge.lon];
 
         return (
@@ -42,7 +42,9 @@ export function LedgeMarkers({ ledges, conditionsByLedgeId }: LedgeMarkersProps)
               <div className="flex flex-col gap-1 text-xs">
                 <div className="font-semibold">{ledge.name}</div>
                 <div>{ledge.area}</div>
-                <div>LLI: {lli === null ? "no data" : Math.round(lli)}</div>
+                <div>
+                  Fishing condition: {fishingPressure === null ? "no data" : Math.round(fishingPressure)}
+                </div>
                 <div className="flex items-center gap-1">
                   <DangerBadge tier={condition?.dangerTier ?? null} />
                   <FishingBadge tier={condition?.fishingTier ?? null} />

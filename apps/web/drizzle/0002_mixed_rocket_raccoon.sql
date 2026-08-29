@@ -1,0 +1,1 @@
+ALTER TABLE "ledges" ADD COLUMN "sheltered" boolean DEFAULT false NOT NULL;
