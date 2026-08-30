@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import { AttributionFooter } from "@/components/shared/AttributionFooter";
-import { FishingConditionBadge } from "@/components/map/FishingConditionBadge";
 import { HourSlider } from "@/components/map/HourSlider";
+import { MapLegend } from "@/components/map/MapLegend";
 import { LedgeMarkers } from "@/components/map/LedgeMarkers";
 import { PressureHeatmap } from "@/components/map/PressureHeatmap";
 import { useConditionsAtRange } from "@/hooks/useConditionsAtRange";
@@ -76,9 +76,7 @@ export function MapPage() {
               )}
             </MapContainer>
 
-            {ledgesQuery.data && (
-              <FishingConditionBadge ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
-            )}
+            <MapLegend />
           </div>
 
           <HourSlider
