@@ -45,36 +45,34 @@ export function MapPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-1 flex-col gap-3 overflow-hidden p-3 md:flex-row">
-        <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-lg border border-slate-200">
-          {isError && (
-            <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/85 p-4 text-center text-sm text-red-700">
-              Couldn&rsquo;t load ledge data. The API may not be live yet.
-            </div>
-          )}
-          <MapContainer center={SYDNEY_CENTER} zoom={DEFAULT_ZOOM} className="h-full w-full">
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {ledgesQuery.data && (
-              <>
-                <PressureHeatmap ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
-                <LedgeMarkers ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
-              </>
+        <div className="flex min-h-[420px] flex-1 flex-col gap-3 overflow-hidden">
+          <div className="relative flex-1 overflow-hidden rounded-lg border border-slate-200">
+            {isError && (
+              <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/85 p-4 text-center text-sm text-red-700">
+                Couldn&rsquo;t load ledge data. The API may not be live yet.
+              </div>
             )}
-          </MapContainer>
-
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1000] p-3">
-            <div className="pointer-events-auto mx-auto max-w-md">
-              <HourSlider
-                hours={hours}
-                index={hourIndex}
-                onChange={setManualIndex}
-                isLive={manualIndex === null}
-                tideSeries={tideSeries}
+            <MapContainer center={SYDNEY_CENTER} zoom={DEFAULT_ZOOM} className="h-full w-full">
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-            </div>
+              {ledgesQuery.data && (
+                <>
+                  <PressureHeatmap ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
+                  <LedgeMarkers ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
+                </>
+              )}
+            </MapContainer>
           </div>
+
+          <HourSlider
+            hours={hours}
+            index={hourIndex}
+            onChange={setManualIndex}
+            isLive={manualIndex === null}
+            tideSeries={tideSeries}
+          />
         </div>
 
         <div className="flex w-full flex-col gap-3 md:w-80 md:shrink-0">

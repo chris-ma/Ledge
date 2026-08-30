@@ -15,18 +15,25 @@ const PANE_Z_INDEX = "350";
 // Samples spread perpendicular to facing_bearing (i.e. along the coast,
 // since we have no real coastline geometry to trace against) so each
 // ledge's zone reads as hugging the shore through that point, not a
-// symmetric blob floating in open water.
-const COAST_SAMPLE_DISTANCES_KM = [0, 0.4, 0.8, 1.2];
-// A couple of samples pushed out to sea (facing_bearing itself) at reduced
-// intensity, so the zone also fans outward a little rather than reading as
-// a flat line.
+// symmetric blob floating in open water. Kept short — several harbour
+// ledges (Blues Point, Kirribilli, Camp Cove, Barrenjoey) sit on narrow
+// points of land, and a wide spread here risks wandering past them.
+const COAST_SAMPLE_DISTANCES_KM = [0, 0.3, 0.6];
+// A single sample pushed out to sea (facing_bearing itself) at reduced
+// intensity, so the zone fans outward toward open water a little rather
+// than reading as a flat line — kept short for the same reason as above.
 const SEAWARD_SAMPLES: ReadonlyArray<{ distanceKm: number; intensityFactor: number }> = [
-  { distanceKm: 0.3, intensityFactor: 0.9 },
-  { distanceKm: 0.6, intensityFactor: 0.75 },
+  { distanceKm: 0.25, intensityFactor: 0.8 },
 ];
 
-const HEAT_RADIUS = 70;
-const HEAT_BLUR = 45;
+// leaflet.heat's radius/blur are fixed SCREEN pixels, not meters — at the
+// map's city-wide default zoom that made the previous 70/45 cover several
+// kilometres of real ground per point, easily spilling over narrow points
+// of land onto the suburbs behind them. Tightened so the visible glow stays
+// close to each ledge's actual coastline; ledges a few hundred metres to
+// ~1km apart (the harbour cluster especially) can still blend together.
+const HEAT_RADIUS = 24;
+const HEAT_BLUR = 16;
 // Deliberately high floor opacity so low-pressure zones still read as a
 // visible (if cool-blue) presence rather than fading to near-invisible.
 const HEAT_MIN_OPACITY = 0.45;

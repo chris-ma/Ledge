@@ -25,9 +25,9 @@ function LiveDot() {
 
 /**
  * Lets the user scrub through the fetched window's hours — indexes into
- * already-fetched data rather than refetching. Rendered as a translucent
- * glass card docked to the bottom of the map itself, so it needs to stay
- * legible over varying map tile colors underneath it.
+ * already-fetched data rather than refetching. Rendered as a glass card
+ * docked beneath the map (in normal document flow, not floating over the
+ * tiles), so the map itself stays fully unobstructed.
  */
 export function HourSlider({ hours, index, onChange, isLive = false, tideSeries }: HourSliderProps) {
   const selected = hours[index];
