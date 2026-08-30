@@ -45,7 +45,7 @@ export function MapPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-1 flex-col gap-3 overflow-hidden p-3 md:flex-row">
-        <div className="flex min-h-[420px] flex-1 flex-col gap-3 overflow-hidden">
+        <div className="flex min-h-[70svh] flex-1 flex-col gap-3 overflow-hidden md:min-h-[420px]">
           <div className="relative flex-1 overflow-hidden rounded-lg border border-slate-200">
             {isError && (
               <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/85 p-4 text-center text-sm text-red-700">
@@ -53,11 +53,20 @@ export function MapPage() {
               </div>
             )}
             <MapContainer center={SYDNEY_CENTER} zoom={DEFAULT_ZOOM} className="h-full w-full">
+              {/* Esri's ArcGIS Online "Light Gray Canvas" basemap — genuinely free,
+                  no API key required (unlike CARTO's basemaps, which now gate
+                  their CDN behind an account). Two layers: a muted base plus a
+                  reference layer for labels/boundaries on top of it. */}
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                subdomains="abcd"
-                maxZoom={20}
+                attribution="Tiles &copy; Esri"
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={19}
+                maxNativeZoom={16}
+              />
+              <TileLayer
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={19}
+                maxNativeZoom={16}
               />
               {ledgesQuery.data && (
                 <>
