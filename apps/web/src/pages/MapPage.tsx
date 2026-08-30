@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import { AttributionFooter } from "@/components/shared/AttributionFooter";
-import { HeatmapLegend } from "@/components/heatmap/HeatmapLegend";
 import { FishingConditionBadge } from "@/components/map/FishingConditionBadge";
 import { HourSlider } from "@/components/map/HourSlider";
 import { LedgeMarkers } from "@/components/map/LedgeMarkers";
@@ -91,13 +90,14 @@ export function MapPage() {
           />
         </div>
 
-        <div className="flex w-full flex-col gap-3 md:w-80 md:shrink-0">
-          <HeatmapLegend />
-          {isLoading && <p className="text-sm text-slate-500">Loading conditions…</p>}
-          {!isLoading && !isError && hours.length === 0 && (
-            <p className="text-sm text-slate-500">No conditions in range yet — check back soon.</p>
-          )}
-        </div>
+        {(isLoading || (!isError && hours.length === 0)) && (
+          <div className="flex w-full flex-col gap-3 md:w-80 md:shrink-0">
+            {isLoading && <p className="text-sm text-slate-500">Loading conditions…</p>}
+            {!isLoading && !isError && hours.length === 0 && (
+              <p className="text-sm text-slate-500">No conditions in range yet — check back soon.</p>
+            )}
+          </div>
+        )}
       </div>
 
       <AttributionFooter />
