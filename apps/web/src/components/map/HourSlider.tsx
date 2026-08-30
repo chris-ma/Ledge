@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { formatSydneyDateTime } from "@/lib/time";
 
 interface HourSliderProps {
@@ -5,23 +6,38 @@ interface HourSliderProps {
   hours: string[];
   index: number;
   onChange: (index: number) => void;
+  /** True when the map is following the current hour rather than a manually-scrubbed one. */
+  isLive?: boolean;
+}
+
+function LiveDot() {
+  return (
+    <span className="relative flex h-1.5 w-1.5">
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+    </span>
+  );
 }
 
 /**
  * Lets the user scrub through the fetched window's hours — indexes into
- * already-fetched data rather than refetching. Rendered as a translucent bar
- * docked to the bottom of the map itself, so it needs to stay legible over
- * varying map tile colors underneath it.
+ * already-fetched data rather than refetching. Rendered as a translucent
+ * glass card docked to the bottom of the map itself, so it needs to stay
+ * legible over varying map tile colors underneath it.
  */
-export function HourSlider({ hours, index, onChange }: HourSliderProps) {
+export function HourSlider({ hours, index, onChange, isLive = false }: HourSliderProps) {
   const selected = hours[index];
   const hasHours = hours.length > 0;
+  const progressPct = hasHours ? (index / Math.max(hours.length - 1, 1)) * 100 : 0;
 
   return (
-    <div className="flex flex-col gap-1 rounded-lg bg-slate-900/80 px-4 py-3 text-white shadow-lg backdrop-blur-sm">
-      <div className="flex items-center justify-between gap-2 text-sm font-medium">
-        <span>Hour</span>
-        <span className="text-right text-ocean-300">
+    <div className="flex flex-col gap-2.5 rounded-2xl border border-white/10 bg-slate-900/75 px-5 py-3.5 text-white shadow-2xl shadow-black/40 backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+          {isLive && <LiveDot />}
+          <span>{isLive ? "Live" : "Hour"}</span>
+        </div>
+        <span className="text-right text-sm font-semibold tracking-tight text-ocean-300">
           {selected ? formatSydneyDateTime(selected) : "No data"}
         </span>
       </div>
@@ -33,10 +49,11 @@ export function HourSlider({ hours, index, onChange }: HourSliderProps) {
         value={hasHours ? index : 0}
         disabled={!hasHours}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-ocean-400 disabled:opacity-40"
+        className="slider-modern w-full"
+        style={{ "--slider-progress": `${progressPct}%` } as CSSProperties}
         aria-label="Select hour"
       />
-      <div className="flex justify-between text-[10px] text-slate-300">
+      <div className="flex justify-between text-[10px] text-slate-400">
         <span>{hasHours ? formatSydneyDateTime(hours[0]) : "—"}</span>
         <span>{hasHours ? formatSydneyDateTime(hours[hours.length - 1]) : "—"}</span>
       </div>

@@ -64,7 +64,7 @@ export function MapPage() {
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1000] p-3">
             <div className="pointer-events-auto mx-auto max-w-md">
-              <HourSlider hours={hours} index={hourIndex} onChange={setManualIndex} />
+              <HourSlider hours={hours} index={hourIndex} onChange={setManualIndex} isLive={manualIndex === null} />
             </div>
           </div>
         </div>

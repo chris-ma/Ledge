@@ -11,3 +11,61 @@ body,
 body {
   @apply bg-slate-50 text-slate-900;
 }
+
+/* Custom range input for HourSlider's map overlay — native range styling
+   varies too much across browsers to look intentional, so the track/thumb
+   are hand-styled here. --slider-progress is set inline per render so the
+   filled portion of the track tracks the thumb. */
+.slider-modern {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    #4fa9c9 var(--slider-progress, 0%),
+    rgba(255, 255, 255, 0.18) var(--slider-progress, 0%)
+  );
+  outline: none;
+}
+
+.slider-modern::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: white;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.45),
+    0 0 0 3px rgba(79, 169, 201, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.slider-modern::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.slider-modern::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  border: none;
+  background: white;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.45),
+    0 0 0 3px rgba(79, 169, 201, 0.4);
+  cursor: pointer;
+}
+
+.slider-modern::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.slider-modern:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
