@@ -1,8 +1,8 @@
 import { pressureToHeatColor } from "@/lib/colorScale";
 
-// Same stops as PressureHeatmap's own gradient (0/33/66/100), so the key's
-// blend genuinely mimics the heat layer's smooth blue->green->yellow->red
-// falloff rather than reading as separate colour bands.
+// A smooth blend across the same blue->green->yellow->red scale
+// PressureHeatmap colors each ledge's marker from, rather than reading as
+// separate discrete colour bands.
 const GRADIENT_CSS = `linear-gradient(to right, ${pressureToHeatColor(0)}, ${pressureToHeatColor(33)}, ${pressureToHeatColor(66)}, ${pressureToHeatColor(100)})`;
 
 /**
