@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { TidePoint } from "@/lib/tide";
 import { formatSydneyDateTime } from "@/lib/time";
-import { TideStrip } from "./TideStrip";
+import { formatTideReading, TideBackdrop } from "./TideStrip";
 
 interface HourSliderProps {
   /** Sorted, unique ISO hour timestamps present in the fetched window. */
@@ -45,23 +45,28 @@ export function HourSlider({ hours, index, onChange, isLive = false, tideSeries 
           {selected ? formatSydneyDateTime(selected) : "No data"}
         </span>
       </div>
-      <input
-        type="range"
-        min={0}
-        max={Math.max(hours.length - 1, 0)}
-        step={1}
-        value={hasHours ? index : 0}
-        disabled={!hasHours}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="slider-modern w-full"
-        style={{ "--slider-progress": `${progressPct}%` } as CSSProperties}
-        aria-label="Select hour"
-      />
-      <div className="flex justify-between text-[10px] text-slate-400">
+      <div className="relative flex h-10 items-center">
+        {hasHours && <TideBackdrop tideSeries={tideSeries} />}
+        <input
+          type="range"
+          min={0}
+          max={Math.max(hours.length - 1, 0)}
+          step={1}
+          value={hasHours ? index : 0}
+          disabled={!hasHours}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="slider-modern relative z-10 w-full"
+          style={{ "--slider-progress": `${progressPct}%` } as CSSProperties}
+          aria-label="Select hour"
+        />
+      </div>
+      <div className="flex items-center justify-between text-[10px] text-slate-400">
         <span>{hasHours ? formatSydneyDateTime(hours[0]) : "—"}</span>
+        {hasHours && (
+          <span className="font-medium text-ocean-300">{formatTideReading(tideSeries, index)}</span>
+        )}
         <span>{hasHours ? formatSydneyDateTime(hours[hours.length - 1]) : "—"}</span>
       </div>
-      {hasHours && <TideStrip tideSeries={tideSeries} index={index} />}
     </div>
   );
 }

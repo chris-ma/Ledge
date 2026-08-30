@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import { AttributionFooter } from "@/components/shared/AttributionFooter";
 import { HeatmapLegend } from "@/components/heatmap/HeatmapLegend";
+import { FishingConditionBadge } from "@/components/map/FishingConditionBadge";
 import { HourSlider } from "@/components/map/HourSlider";
 import { LedgeMarkers } from "@/components/map/LedgeMarkers";
 import { PressureHeatmap } from "@/components/map/PressureHeatmap";
@@ -75,6 +76,10 @@ export function MapPage() {
                 </>
               )}
             </MapContainer>
+
+            {ledgesQuery.data && (
+              <FishingConditionBadge ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
+            )}
           </div>
 
           <HourSlider

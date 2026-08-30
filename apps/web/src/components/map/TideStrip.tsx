@@ -1,13 +1,8 @@
 import { tideTrend, type TidePoint } from "@/lib/tide";
 
-interface TideStripProps {
-  tideSeries: TidePoint[];
-  index: number;
-}
-
 const SVG_WIDTH = 100;
-const SVG_HEIGHT = 28;
-const Y_PADDING = 3;
+const SVG_HEIGHT = 40;
+const Y_PADDING = 6;
 
 interface Paths {
   linePath: string;
@@ -44,65 +39,40 @@ function buildPaths(series: TidePoint[]): Paths | null {
 const TREND_ARROW: Record<string, string> = { rising: "↑", falling: "↓", steady: "→" };
 const TREND_LABEL: Record<string, string> = { rising: "Rising", falling: "Falling", steady: "Steady" };
 
-/**
- * A tide sparkline + readout docked underneath HourSlider's range input,
- * sharing its exact 0-100% x-axis so the marker line lines up with the
- * slider thumb above it — scrubbing the hour visibly moves both together.
- */
-export function TideStrip({ tideSeries, index }: TideStripProps) {
+/** Plain-text tide reading for the current hour — "62cm ↑ Rising", or "No data". Used in HourSlider's footer row. */
+export function formatTideReading(tideSeries: TidePoint[], index: number): string {
   const current = tideSeries[index];
-  const trend = current ? tideTrend(current.rateCmPerHr) : null;
+  if (!current || current.heightCm === null) return "No tide data";
+  const trend = tideTrend(current.rateCmPerHr);
+  const trendText = trend ? ` ${TREND_ARROW[trend]} ${TREND_LABEL[trend]}` : "";
+  return `${Math.round(current.heightCm)}cm${trendText}`;
+}
+
+/**
+ * A translucent tide-height sparkline, absolutely positioned to fill its
+ * parent — meant to sit visually BEHIND HourSlider's range input as a
+ * backdrop, not as its own separate section. Shares the exact 0-100% x-axis
+ * as the slider (same `hours`/`tideSeries` index), so the slider thumb
+ * scrubbing across it lines up with wherever "now" sits in the tide cycle.
+ */
+export function TideBackdrop({ tideSeries }: { tideSeries: TidePoint[] }) {
   const paths = buildPaths(tideSeries);
-  const hasCurrent = current?.heightCm !== null && current?.heightCm !== undefined;
-  const markerPct = tideSeries.length > 1 ? (index / (tideSeries.length - 1)) * 100 : 0;
+  if (!paths) return null;
 
   return (
-    <div className="flex flex-col gap-1 border-t border-white/10 pt-2.5">
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Tide</span>
-        <span className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-ocean-300">
-          {hasCurrent ? `${Math.round(current!.heightCm as number)}cm` : "No data"}
-          {trend && (
-            <span className="text-xs font-medium text-slate-300">
-              {TREND_ARROW[trend]} {TREND_LABEL[trend]}
-            </span>
-          )}
-        </span>
-      </div>
-      <div className="relative h-7 w-full">
-        {paths ? (
-          <>
-            <svg
-              viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-              preserveAspectRatio="none"
-              className="h-full w-full overflow-visible"
-            >
-              <defs>
-                <linearGradient id="tideFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#4fa9c9" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#4fa9c9" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path d={paths.areaPath} fill="url(#tideFill)" />
-              <path
-                d={paths.linePath}
-                fill="none"
-                stroke="#7cc4dc"
-                strokeWidth="1.2"
-                vectorEffect="non-scaling-stroke"
-              />
-            </svg>
-            <div
-              className="pointer-events-none absolute top-0 h-full w-px bg-white/50"
-              style={{ left: `${markerPct}%` }}
-            />
-          </>
-        ) : (
-          <div className="flex h-full items-center justify-center text-[10px] text-slate-500">
-            No tide data for this window
-          </div>
-        )}
-      </div>
-    </div>
+    <svg
+      viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
+      preserveAspectRatio="none"
+      className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+    >
+      <defs>
+        <linearGradient id="tideFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#4fa9c9" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#4fa9c9" stopOpacity="0.05" />
+        </linearGradient>
+      </defs>
+      <path d={paths.areaPath} fill="url(#tideFill)" />
+      <path d={paths.linePath} fill="none" stroke="#7cc4dc" strokeWidth="1.2" strokeOpacity="0.7" vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }
