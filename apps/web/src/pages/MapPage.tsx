@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
-import { AttributionFooter } from "@/components/shared/AttributionFooter";
 import { HourSlider } from "@/components/map/HourSlider";
-import { MapLegend } from "@/components/map/MapLegend";
 import { LedgeMarkers } from "@/components/map/LedgeMarkers";
+import { MapLegend } from "@/components/map/MapLegend";
 import { PressureHeatmap } from "@/components/map/PressureHeatmap";
 import { useConditionsAtRange } from "@/hooks/useConditionsAtRange";
 import { useLedges } from "@/hooks/useLedges";
@@ -97,8 +96,6 @@ export function MapPage() {
           </div>
         )}
       </div>
-
-      <AttributionFooter />
     </div>
   );
 }

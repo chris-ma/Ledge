@@ -14,8 +14,14 @@ declare module "leaflet" {
     pane?: string;
   }
 
+  interface HeatLayer extends Layer {
+    setLatLngs(latlngs: ReadonlyArray<readonly [number, number, number] | readonly [number, number]>): this;
+    addLatLng(latlng: readonly [number, number, number] | readonly [number, number]): this;
+    setOptions(options: HeatLayerOptions): this;
+  }
+
   function heatLayer(
     latlngs: ReadonlyArray<readonly [number, number, number] | readonly [number, number]>,
     options?: HeatLayerOptions,
-  ): Layer;
+  ): HeatLayer;
 }
