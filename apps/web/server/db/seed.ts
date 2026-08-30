@@ -1,8 +1,13 @@
 // Seeds the MVP's Sydney ledge cluster (README.md section 4a). Run via
-// `npm run db:seed` after migrations have been applied. lat/lon/facing
-// bearing are estimated from general geography, NOT surveyed on-site —
-// height_verified stays false on every row until someone checks them
-// against the real platform.
+// `npm run db:seed` after migrations have been applied. Coordinates are
+// each ledge's own named-landmark location (cross-checked against public
+// reference coordinates for that headland/point/beach — not a fresh guess),
+// which is the same point used to query its swell/tide data; there is no
+// separate "weather station" coordinate anywhere in this app. Still NOT a
+// surveyed position of the actual rock platform anglers fish from, which
+// can be tens of metres from the named landmark's own reference point —
+// height_verified stays false on every row until someone checks it
+// on-site.
 import "dotenv/config";
 import { fileURLToPath } from "url";
 import { db } from "./client.js";
@@ -12,8 +17,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Cape Solander",
     area: "Kurnell / Royal National Park",
-    lat: -34.0008,
-    lon: 151.2325,
+    lat: -34.0164,
+    lon: 151.2317,
     facingBearing: 113,
     platformHeightM: 4.0,
     slopeEstimate: 0.1,
@@ -26,9 +31,9 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Jibbon Point",
     area: "Bundeena",
-    lat: -34.087,
-    lon: 151.165,
-    facingBearing: 113,
+    lat: -34.083,
+    lon: 151.157,
+    facingBearing: 100,
     platformHeightM: 5.0,
     slopeEstimate: 0.1,
     safetyMargin: 0.7,
@@ -39,8 +44,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Voodoo Point",
     area: "Malabar",
-    lat: -33.97,
-    lon: 151.257,
+    lat: -33.9606,
+    lon: 151.2619,
     facingBearing: 135,
     platformHeightM: 4.0,
     slopeEstimate: 0.1,
@@ -52,8 +57,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Wedding Cake Island headland",
     area: "Coogee",
-    lat: -33.923,
-    lon: 151.262,
+    lat: -33.9215,
+    lon: 151.2595,
     facingBearing: 90,
     platformHeightM: 4.0,
     slopeEstimate: 0.1,
@@ -65,8 +70,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Ben Buckler",
     area: "Bondi",
-    lat: -33.8874,
-    lon: 151.2822,
+    lat: -33.8842,
+    lon: 151.2844,
     facingBearing: 45,
     platformHeightM: 5.0,
     slopeEstimate: 0.1,
@@ -91,8 +96,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "The Gap",
     area: "Watsons Bay",
-    lat: -33.8237,
-    lon: 151.2814,
+    lat: -33.8435,
+    lon: 151.2825,
     facingBearing: 90,
     platformHeightM: 4.0,
     slopeEstimate: 0.1,
@@ -104,9 +109,9 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "North Head",
     area: "Manly",
-    lat: -33.821,
-    lon: 151.299,
-    facingBearing: 68,
+    lat: -33.815,
+    lon: 151.301,
+    facingBearing: 75,
     platformHeightM: 6.0,
     slopeEstimate: 0.1,
     safetyMargin: 0.7,
@@ -117,8 +122,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Fairy Bower",
     area: "Manly",
-    lat: -33.802,
-    lon: 151.287,
+    lat: -33.8008,
+    lon: 151.2944,
     facingBearing: 23,
     platformHeightM: 3.0,
     slopeEstimate: 0.1,
@@ -130,8 +135,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Long Reef Point",
     area: "Collaroy",
-    lat: -33.735,
-    lon: 151.316,
+    lat: -33.7318,
+    lon: 151.3179,
     facingBearing: 90,
     platformHeightM: 4.0,
     slopeEstimate: 0.1,
@@ -143,8 +148,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Dee Why Point",
     area: "Dee Why",
-    lat: -33.753,
-    lon: 151.298,
+    lat: -33.7544,
+    lon: 151.2854,
     facingBearing: 90,
     platformHeightM: 4.0,
     slopeEstimate: 0.1,
@@ -156,9 +161,9 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Barrenjoey Head",
     area: "Palm Beach",
-    lat: -33.578,
-    lon: 151.328,
-    facingBearing: 23,
+    lat: -33.5801,
+    lon: 151.3298,
+    facingBearing: 80,
     platformHeightM: 6.0,
     slopeEstimate: 0.1,
     safetyMargin: 0.7,
@@ -174,8 +179,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Camp Cove",
     area: "Watsons Bay (harbour side)",
-    lat: -33.8404,
-    lon: 151.2807,
+    lat: -33.8402,
+    lon: 151.2762,
     facingBearing: 250,
     platformHeightM: 2.0,
     slopeEstimate: 0.1,
@@ -189,8 +194,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Bradleys Head",
     area: "Mosman",
-    lat: -33.8402,
-    lon: 151.2472,
+    lat: -33.8525,
+    lon: 151.2458,
     facingBearing: 75,
     platformHeightM: 2.5,
     slopeEstimate: 0.1,
@@ -204,8 +209,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Chowder Bay / Clifton Gardens",
     area: "Mosman",
-    lat: -33.8377,
-    lon: 151.2494,
+    lat: -33.8421,
+    lon: 151.2476,
     facingBearing: 165,
     platformHeightM: 1.5,
     slopeEstimate: 0.1,
@@ -219,8 +224,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Balmoral Point",
     area: "Balmoral",
-    lat: -33.8266,
-    lon: 151.2508,
+    lat: -33.8252,
+    lon: 151.2465,
     facingBearing: 185,
     platformHeightM: 2.0,
     slopeEstimate: 0.1,
@@ -234,8 +239,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Nielsen Park",
     area: "Vaucluse",
-    lat: -33.8551,
-    lon: 151.2679,
+    lat: -33.8521,
+    lon: 151.2669,
     facingBearing: 350,
     platformHeightM: 2.0,
     slopeEstimate: 0.1,
@@ -249,8 +254,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Cremorne Point",
     area: "Mosman",
-    lat: -33.8425,
-    lon: 151.2312,
+    lat: -33.8488,
+    lon: 151.233,
     facingBearing: 220,
     platformHeightM: 2.5,
     slopeEstimate: 0.1,
@@ -264,8 +269,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Kirribilli Point",
     area: "Kirribilli",
-    lat: -33.8503,
-    lon: 151.2159,
+    lat: -33.851,
+    lon: 151.219,
     facingBearing: 200,
     platformHeightM: 1.5,
     slopeEstimate: 0.1,
@@ -279,8 +284,8 @@ const SEED_LEDGES: NewLedge[] = [
   {
     name: "Blues Point",
     area: "McMahons Point",
-    lat: -33.8478,
-    lon: 151.2098,
+    lat: -33.8498,
+    lon: 151.2038,
     facingBearing: 110,
     platformHeightM: 1.5,
     slopeEstimate: 0.1,
