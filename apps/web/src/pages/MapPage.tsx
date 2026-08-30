@@ -7,6 +7,7 @@ import { LedgeMarkers } from "@/components/map/LedgeMarkers";
 import { PressureHeatmap } from "@/components/map/PressureHeatmap";
 import { useConditionsAtRange } from "@/hooks/useConditionsAtRange";
 import { useLedges } from "@/hooks/useLedges";
+import { computeRegionalTideSeries } from "@/lib/tide";
 import { findDefaultHourIndex, getDefaultWindowIso, getUniqueSortedTimestamps } from "@/lib/time";
 import type { LedgeCondition } from "@/lib/types";
 
@@ -22,6 +23,7 @@ export function MapPage() {
   const conditions = conditionsQuery.data ?? [];
 
   const hours = useMemo(() => getUniqueSortedTimestamps(conditions), [conditions]);
+  const tideSeries = useMemo(() => computeRegionalTideSeries(conditions, hours), [conditions, hours]);
 
   // null = "follow the default (current hour)"; a number once the user drags the slider.
   const [manualIndex, setManualIndex] = useState<number | null>(null);
@@ -64,7 +66,13 @@ export function MapPage() {
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1000] p-3">
             <div className="pointer-events-auto mx-auto max-w-md">
-              <HourSlider hours={hours} index={hourIndex} onChange={setManualIndex} isLive={manualIndex === null} />
+              <HourSlider
+                hours={hours}
+                index={hourIndex}
+                onChange={setManualIndex}
+                isLive={manualIndex === null}
+                tideSeries={tideSeries}
+              />
             </div>
           </div>
         </div>

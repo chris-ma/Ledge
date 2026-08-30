@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
+import type { TidePoint } from "@/lib/tide";
 import { formatSydneyDateTime } from "@/lib/time";
+import { TideStrip } from "./TideStrip";
 
 interface HourSliderProps {
   /** Sorted, unique ISO hour timestamps present in the fetched window. */
@@ -8,6 +10,8 @@ interface HourSliderProps {
   onChange: (index: number) => void;
   /** True when the map is following the current hour rather than a manually-scrubbed one. */
   isLive?: boolean;
+  /** Same length/order as `hours` — one averaged tide reading per hour. */
+  tideSeries: TidePoint[];
 }
 
 function LiveDot() {
@@ -25,7 +29,7 @@ function LiveDot() {
  * glass card docked to the bottom of the map itself, so it needs to stay
  * legible over varying map tile colors underneath it.
  */
-export function HourSlider({ hours, index, onChange, isLive = false }: HourSliderProps) {
+export function HourSlider({ hours, index, onChange, isLive = false, tideSeries }: HourSliderProps) {
   const selected = hours[index];
   const hasHours = hours.length > 0;
   const progressPct = hasHours ? (index / Math.max(hours.length - 1, 1)) * 100 : 0;
@@ -57,6 +61,7 @@ export function HourSlider({ hours, index, onChange, isLive = false }: HourSlide
         <span>{hasHours ? formatSydneyDateTime(hours[0]) : "—"}</span>
         <span>{hasHours ? formatSydneyDateTime(hours[hours.length - 1]) : "—"}</span>
       </div>
+      {hasHours && <TideStrip tideSeries={tideSeries} index={index} />}
     </div>
   );
 }
