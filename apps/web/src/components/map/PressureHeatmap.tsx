@@ -2,6 +2,7 @@ import L from "leaflet";
 import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import { fishingConditionColor } from "@/lib/colorScale";
+import { destinationPoint } from "@/lib/geo";
 import type { Ledge, LedgeCondition } from "@/lib/types";
 
 const PANE_NAME = "pressureHeat";
@@ -9,14 +10,29 @@ const PANE_NAME = "pressureHeat";
 // live) so the clickable tap target always stays reachable on top.
 const PANE_Z_INDEX = "350";
 
-// A small, non-blended circle right at each ledge's shoreline coordinate.
-// Leaflet's L.circle takes its radius in real metres (unlike a heat layer's
-// fixed screen-pixel radius), so this stays a true 5-10m footprint at any
-// zoom without conversion math, and — since it's the exact coordinate a
-// ledge's swell/tide data is queried against — it never spreads far enough
-// to land on anything inland.
-const ZONE_RADIUS_M = 7; // mid-point of the requested 5-10m
-const ZONE_FILL_OPACITY = 0.6;
+// Real coastline geometry isn't available in this build (see PR history) —
+// each ledge's mark is a short line synthesized from its own coordinate and
+// facing_bearing, running "along the coast" (perpendicular to the bearing
+// that points out to sea) rather than a single point. Still an
+// approximation (a straight local tangent, not a curve around the actual
+// bay), but it reads as tracing the shoreline rather than marking a dot.
+const SHORE_SEGMENT_HALF_LENGTH_KM = 0.1; // 100m each side, 200m total
+const LINE_WEIGHT_PX = 8;
+const LINE_OPACITY = 0.75;
+
+interface LatLon {
+  lat: number;
+  lon: number;
+}
+
+/** Two endpoints of a short line through the ledge's point, parallel to the coast at that spot. */
+function shorelineEndpoints(ledge: Ledge): [LatLon, LatLon] {
+  const alongCoast = (ledge.facingBearing + 90) % 360;
+  return [
+    destinationPoint(ledge.lat, ledge.lon, alongCoast, SHORE_SEGMENT_HALF_LENGTH_KM),
+    destinationPoint(ledge.lat, ledge.lon, (alongCoast + 180) % 360, SHORE_SEGMENT_HALF_LENGTH_KM),
+  ];
+}
 
 interface PressureHeatmapProps {
   ledges: Ledge[];
@@ -25,21 +41,16 @@ interface PressureHeatmapProps {
 }
 
 /**
- * One small solid-color circle per ledge, right at its shoreline coordinate,
- * colored by its Fishing Pressure for the selected hour. Deliberately NOT a
- * blended/blurred heat layer — each ledge's circle is independent and
- * opaque, so colors never cross over or blend between nearby ledges. At a
- * 5-10m radius no two seeded ledges sit anywhere near close enough to
- * actually touch; if any future ledge ever does, plain circles resolve the
- * overlap by paint order (later-added draws on top) rather than blending —
- * there's deliberately no per-pixel "nearest ledge wins" computation here,
- * since it can't currently be observed at this scale. Ledges with no
- * fishingPressure for the selected hour get no circle at all, never a
- * fabricated cold one.
+ * One short line per ledge, tracing the shoreline at that point (rather than
+ * a dot at its coordinate), colored by its Fishing Pressure for the selected
+ * hour. Deliberately NOT a blended/blurred heat layer — each ledge's line is
+ * independent and opaque, so colors never cross over or blend between
+ * nearby ledges. Ledges with no fishingPressure for the selected hour get no
+ * line at all, never a fabricated cold one.
  */
 export function PressureHeatmap({ ledges, conditionsByLedgeId }: PressureHeatmapProps) {
   const map = useMap();
-  const circlesRef = useRef<L.Circle[]>([]);
+  const linesRef = useRef<L.Polyline[]>([]);
 
   useEffect(() => {
     if (!map.getPane(PANE_NAME)) {
@@ -48,28 +59,34 @@ export function PressureHeatmap({ ledges, conditionsByLedgeId }: PressureHeatmap
       pane.style.pointerEvents = "none";
     }
 
-    const circles: L.Circle[] = [];
+    const lines: L.Polyline[] = [];
     for (const ledge of ledges) {
       const pressure = conditionsByLedgeId.get(ledge.id)?.fishingPressure;
       if (pressure === null || pressure === undefined) continue;
 
       const color = fishingConditionColor(pressure);
-      const circle = L.circle([ledge.lat, ledge.lon], {
-        radius: ZONE_RADIUS_M,
-        pane: PANE_NAME,
-        color,
-        weight: 0,
-        fillColor: color,
-        fillOpacity: ZONE_FILL_OPACITY,
-      });
-      circle.addTo(map);
-      circles.push(circle);
+      const [a, b] = shorelineEndpoints(ledge);
+      const line = L.polyline(
+        [
+          [a.lat, a.lon],
+          [b.lat, b.lon],
+        ],
+        {
+          pane: PANE_NAME,
+          color,
+          weight: LINE_WEIGHT_PX,
+          opacity: LINE_OPACITY,
+          lineCap: "round",
+        },
+      );
+      line.addTo(map);
+      lines.push(line);
     }
-    circlesRef.current = circles;
+    linesRef.current = lines;
 
     return () => {
-      for (const circle of circles) circle.remove();
-      circlesRef.current = [];
+      for (const line of lines) line.remove();
+      linesRef.current = [];
     };
   }, [map, ledges, conditionsByLedgeId]);
 

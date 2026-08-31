@@ -2,7 +2,19 @@ import { CircleMarker, Tooltip } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 import { DangerBadge } from "@/components/shared/DangerBadge";
 import { FishingBadge } from "@/components/shared/FishingBadge";
+import { distanceKm } from "@/lib/geo";
 import type { Ledge, LedgeCondition } from "@/lib/types";
+
+// Below this offset, the weather station point is close enough to the
+// ledge's own coordinate that calling it out would just be noise — only
+// worth a mention once the tide fetch actually had to fall back offshore
+// (see fetchTideWithFallback in server/computeAndUpsert.ts, an ~8km nudge).
+const NOTABLE_OFFSET_KM = 1;
+
+function weatherStationOffsetKm(ledge: Ledge): number | null {
+  if (ledge.weatherStationLat === null || ledge.weatherStationLon === null) return null;
+  return distanceKm(ledge.lat, ledge.lon, ledge.weatherStationLat, ledge.weatherStationLon);
+}
 
 interface LedgeMarkersProps {
   ledges: Ledge[];
@@ -26,6 +38,7 @@ export function LedgeMarkers({ ledges, conditionsByLedgeId }: LedgeMarkersProps)
         const condition = conditionsByLedgeId.get(ledge.id);
         const fishingPressure = condition?.fishingPressure ?? null;
         const position: [number, number] = [ledge.lat, ledge.lon];
+        const offsetKm = weatherStationOffsetKm(ledge);
 
         return (
           <CircleMarker
@@ -49,6 +62,9 @@ export function LedgeMarkers({ ledges, conditionsByLedgeId }: LedgeMarkersProps)
                   <DangerBadge tier={condition?.dangerTier ?? null} />
                   <FishingBadge tier={condition?.fishingTier ?? null} />
                 </div>
+                {offsetKm !== null && offsetKm >= NOTABLE_OFFSET_KM && (
+                  <div>Tide data sourced ~{Math.round(offsetKm)}km offshore</div>
+                )}
                 {!ledge.heightVerified && <div>Unverified location/height</div>}
               </div>
             </Tooltip>

@@ -59,6 +59,15 @@ export const ledges = pgTable(
     // server/model/fishingPressure.ts's sheltered branch.
     sheltered: boolean("sheltered").notNull().default(false),
     notes: text("notes"),
+    // The coordinate the most recent successful ODB tide fetch actually
+    // used — the ledge's own lat/lon in the common case, or the
+    // offshore-nudged fallback point when the exact coordinate's tide grid
+    // cell was land-masked (see fetchTideWithFallback in
+    // computeAndUpsert.ts). Open-Meteo swell/current has no such fallback
+    // (always queries the ledge's own coordinate), so this only tracks
+    // tide's behavior. Null until the first successful tide fetch.
+    weatherStationLat: doublePrecision("weather_station_lat"),
+    weatherStationLon: doublePrecision("weather_station_lon"),
     geog: geographyPoint("geog").generatedAlwaysAs(
       sql`ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography`,
     ),

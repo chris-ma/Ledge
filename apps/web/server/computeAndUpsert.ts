@@ -1,6 +1,6 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "./db/client.js";
-import { ledgeConditions, type Ledge } from "./db/schema.js";
+import { ledgeConditions, ledges, type Ledge } from "./db/schema.js";
 import { destinationPoint } from "./geo.js";
 import { FORECAST_DAYS, TREND_WINDOW_HOURS } from "./model/constants.js";
 import { computeDangerSeries } from "./model/danger.js";
@@ -25,22 +25,32 @@ const ONE_HOUR_MS = 60 * 60 * 1000;
 // back to the offset if that fails — never force the nudge unconditionally.
 const TIDE_QUERY_OFFSET_KM = 8;
 
+interface TideFetchResult {
+  hours: TideHour[];
+  usedLat: number;
+  usedLon: number;
+}
+
 /**
  * Tries the ledge's exact coordinate first, falls back to a point nudged
  * `TIDE_QUERY_OFFSET_KM` out to sea if that fails — see the constant's
- * comment for why neither alone covers every ledge.
+ * comment for why neither alone covers every ledge. Reports back which
+ * coordinate actually succeeded so the caller can persist it as the ledge's
+ * "weather station" point.
  */
 async function fetchTideWithFallback(
   ledge: Ledge,
   startDate: string,
   endDate: string,
-): Promise<TideHour[]> {
+): Promise<TideFetchResult> {
   try {
-    return await fetchTide(ledge.lat, ledge.lon, startDate, endDate);
+    const hours = await fetchTide(ledge.lat, ledge.lon, startDate, endDate);
+    return { hours, usedLat: ledge.lat, usedLon: ledge.lon };
   } catch (exactErr) {
     const offshore = destinationPoint(ledge.lat, ledge.lon, ledge.facingBearing, TIDE_QUERY_OFFSET_KM);
     try {
-      return await fetchTide(offshore.lat, offshore.lon, startDate, endDate);
+      const hours = await fetchTide(offshore.lat, offshore.lon, startDate, endDate);
+      return { hours, usedLat: offshore.lat, usedLon: offshore.lon };
     } catch (offshoreErr) {
       console.error(
         `Tide fetch failed for "${ledge.name}" at both its exact coordinate and the offshore fallback:`,
@@ -100,7 +110,15 @@ export async function computeAndUpsertForLedge(ledge: Ledge): Promise<ComputeAnd
       tideResult.reason,
     );
   }
-  const tide = tideResult.status === "fulfilled" ? tideResult.value : [];
+  const tide = tideResult.status === "fulfilled" ? tideResult.value.hours : [];
+
+  if (tideResult.status === "fulfilled") {
+    const { usedLat, usedLon } = tideResult.value;
+    await db
+      .update(ledges)
+      .set({ weatherStationLat: usedLat, weatherStationLon: usedLon, updatedAt: new Date() })
+      .where(eq(ledges.id, ledge.id));
+  }
 
   const merged = mergeHourlySeries(swellCurrent, tide);
 

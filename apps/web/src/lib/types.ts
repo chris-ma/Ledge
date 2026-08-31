@@ -19,6 +19,9 @@ export interface Ledge {
   /** True for a ledge inside a sheltered harbour — its Fishing Condition score is tide-only, not swell+tide. */
   sheltered: boolean;
   notes: string | null;
+  /** The coordinate the most recent successful tide fetch actually used — null until the first success. */
+  weatherStationLat: number | null;
+  weatherStationLon: number | null;
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
 }

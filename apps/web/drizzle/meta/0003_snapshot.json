@@ -1,0 +1,386 @@
+{
+  "id": "eff03627-b281-4eac-b7b2-0b8d39fbd093",
+  "prevId": "7091cdee-3b00-480c-ba93-8fd84c562400",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.ledge_conditions": {
+      "name": "ledge_conditions",
+      "schema": "",
+      "columns": {
+        "ledge_id": {
+          "name": "ledge_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ts": {
+          "name": "ts",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_run_at": {
+          "name": "source_run_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "hs_m": {
+          "name": "hs_m",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tp_s": {
+          "name": "tp_s",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "swell_dir_deg": {
+          "name": "swell_dir_deg",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_speed_ms": {
+          "name": "current_speed_ms",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_dir_deg": {
+          "name": "current_dir_deg",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tide_height_cm": {
+          "name": "tide_height_cm",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tide_rate_cm_per_hr": {
+          "name": "tide_rate_cm_per_hr",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wave_load": {
+          "name": "wave_load",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_load": {
+          "name": "current_load",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tide_modulation_factor": {
+          "name": "tide_modulation_factor",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lli": {
+          "name": "lli",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "r2_estimate_m": {
+          "name": "r2_estimate_m",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "danger_flag": {
+          "name": "danger_flag",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "danger_tier": {
+          "name": "danger_tier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tide_current_speed_ms": {
+          "name": "tide_current_speed_ms",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tide_current_dir_deg": {
+          "name": "tide_current_dir_deg",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fishing_pressure": {
+          "name": "fishing_pressure",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fishing_tier": {
+          "name": "fishing_tier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_complete": {
+          "name": "data_complete",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "generated": {
+            "as": "(hs_m is not null and tp_s is not null and swell_dir_deg is not null and current_speed_ms is not null and current_dir_deg is not null and tide_height_cm is not null)",
+            "type": "stored"
+          }
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ledge_conditions_ts_idx": {
+          "name": "ledge_conditions_ts_idx",
+          "columns": [
+            {
+              "expression": "ts",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ledge_conditions_danger_idx": {
+          "name": "ledge_conditions_danger_idx",
+          "columns": [
+            {
+              "expression": "ts",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "danger_flag",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "ledge_conditions_ledge_id_ledges_id_fk": {
+          "name": "ledge_conditions_ledge_id_ledges_id_fk",
+          "tableFrom": "ledge_conditions",
+          "tableTo": "ledges",
+          "columnsFrom": [
+            "ledge_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "ledge_conditions_ledge_id_ts_pk": {
+          "name": "ledge_conditions_ledge_id_ts_pk",
+          "columns": [
+            "ledge_id",
+            "ts"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ledges": {
+      "name": "ledges",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "area": {
+          "name": "area",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lat": {
+          "name": "lat",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lon": {
+          "name": "lon",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "facing_bearing": {
+          "name": "facing_bearing",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "platform_height_m": {
+          "name": "platform_height_m",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slope_estimate": {
+          "name": "slope_estimate",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "safety_margin": {
+          "name": "safety_margin",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0.7
+        },
+        "is_declared_hazard": {
+          "name": "is_declared_hazard",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "height_verified": {
+          "name": "height_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "sheltered": {
+          "name": "sheltered",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weather_station_lat": {
+          "name": "weather_station_lat",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weather_station_lon": {
+          "name": "weather_station_lon",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geog": {
+          "name": "geog",
+          "type": "geography(Point,4326)",
+          "primaryKey": false,
+          "notNull": false,
+          "generated": {
+            "as": "ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography",
+            "type": "stored"
+          }
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ledges_geog_gix": {
+          "name": "ledges_geog_gix",
+          "columns": [
+            {
+              "expression": "geog",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gist",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "ledges_name_unique": {
+          "name": "ledges_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
