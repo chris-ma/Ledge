@@ -3,7 +3,6 @@ import { MapContainer, TileLayer } from "react-leaflet";
 import { HourSlider } from "@/components/map/HourSlider";
 import { LedgeMarkers } from "@/components/map/LedgeMarkers";
 import { MapLegend } from "@/components/map/MapLegend";
-import { PressureHeatmap } from "@/components/map/PressureHeatmap";
 import { useConditionsAtRange } from "@/hooks/useConditionsAtRange";
 import { useLedges } from "@/hooks/useLedges";
 import { computeRegionalTideSeries } from "@/lib/tide";
@@ -68,10 +67,7 @@ export function MapPage() {
                 maxNativeZoom={16}
               />
               {ledgesQuery.data && (
-                <>
-                  <PressureHeatmap ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
-                  <LedgeMarkers ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
-                </>
+                <LedgeMarkers ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
               )}
             </MapContainer>
 
