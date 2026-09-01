@@ -64,10 +64,12 @@ export const FISHING_WAVE_LOAD_REF_MAX = 60;
  * speeds ran ~0.005-0.023 m/s, an order of magnitude smaller, which had
  * been crushing the tide term to near-zero for every ledge/hour. */
 export const TIDE_CURRENT_PRESSURE_REF_MAX_MS = 0.03;
-/** Equal weight: the user's own framing named swell and tide as two equally
- * contributing halves of "pressure", unlike LLI's safety-driven 0.7/0.3 split. */
-export const FISHING_SWELL_WEIGHT = 0.5;
-export const FISHING_TIDE_WEIGHT = 0.5;
+/** Tide weighted above swell: tide direction/speed comes from a real tidal
+ * model (ODB/TPXO) at the ledge's own hour, where swell is a coarser marine
+ * forecast — and for the sheltered harbour ledges tide is the only signal
+ * there is. Was an even 0.5/0.5 split; moved to 0.6/0.4 on request. */
+export const FISHING_SWELL_WEIGHT = 0.4;
+export const FISHING_TIDE_WEIGHT = 0.6;
 /** Even 4-way split of the 0-100 score into poor/fair/good/great. */
 export const FISHING_FAIR_THRESHOLD = 25;
 export const FISHING_GOOD_THRESHOLD = 50;

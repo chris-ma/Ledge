@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { FISHING_WAVE_LOAD_REF_MAX, TIDE_CURRENT_PRESSURE_REF_MAX_MS } from "./constants.js";
+import {
+  FISHING_SWELL_WEIGHT,
+  FISHING_TIDE_WEIGHT,
+  FISHING_WAVE_LOAD_REF_MAX,
+  TIDE_CURRENT_PRESSURE_REF_MAX_MS,
+} from "./constants.js";
 import {
   computeFishingPressureForHour,
   computeFishingPressureIndex,
@@ -56,9 +61,20 @@ describe("computeFishingPressureIndex", () => {
     expect(computeFishingPressureIndex(FISHING_WAVE_LOAD_REF_MAX, TIDE_CURRENT_PRESSURE_REF_MAX_MS)).toBe(100);
   });
 
-  it("blends partial terms evenly (0.5/0.5 weights)", () => {
-    // swell at half its ref max, tide at zero -> 0.5 * 0.5 * 100 = 25
-    expect(computeFishingPressureIndex(FISHING_WAVE_LOAD_REF_MAX / 2, 0)).toBe(25);
+  it("weights each term by its configured share", () => {
+    // swell at half its ref max, tide at zero -> swellWeight * 0.5 * 100
+    expect(computeFishingPressureIndex(FISHING_WAVE_LOAD_REF_MAX / 2, 0)).toBe(
+      Math.round(FISHING_SWELL_WEIGHT * 0.5 * 100),
+    );
+  });
+
+  it("weighs tide above swell", () => {
+    // Same fractional distance toward each term's own reference max, tide
+    // scores higher purely because it's weighted more heavily.
+    const swellOnly = computeFishingPressureIndex(FISHING_WAVE_LOAD_REF_MAX, 0);
+    const tideOnly = computeFishingPressureIndex(0, TIDE_CURRENT_PRESSURE_REF_MAX_MS);
+    expect(tideOnly).toBeGreaterThan(swellOnly);
+    expect(FISHING_TIDE_WEIGHT).toBeGreaterThan(FISHING_SWELL_WEIGHT);
   });
 });
 
@@ -142,7 +158,7 @@ describe("computeFishingPressureForHour", () => {
       ).toBeNull();
     });
 
-    it("scores higher than the blended (non-sheltered) formula for the same tide pressure, since it isn't diluted by a 0.5 swell weight", () => {
+    it("scores higher than the blended (non-sheltered) formula for the same tide pressure, since it isn't diluted by any swell weight", () => {
       // u=-20,v=0 -> current flows due west, i.e. arrives FROM the east
       // (90deg), squarely onto facingBearingDeg=90 -> nonzero tide pressure.
       const pushingInputs = { ...baseInputs, tideCurrentUCmS: -20, tideCurrentVCmS: 0 };

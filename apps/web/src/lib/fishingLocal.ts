@@ -26,8 +26,9 @@ import type { LedgeCondition } from "./types";
 // server/model/constants.ts for the reasoning and the reference figure.
 const FISHING_WAVE_LOAD_REF_MAX = 60;
 const TIDE_CURRENT_PRESSURE_REF_MAX_MS = 0.03;
-const SWELL_WEIGHT = 0.5;
-const TIDE_WEIGHT = 0.5;
+// Tide weighted above swell — see the matching comment in server/model/constants.ts.
+const SWELL_WEIGHT = 0.4;
+const TIDE_WEIGHT = 0.6;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
