@@ -53,6 +53,8 @@ export interface DangerLedgeInputs {
   platformHeightM: number;
   safetyMargin: number;
   slopeEstimate: number | null;
+  /** Ocean swell doesn't reach this ledge — see the same flag's use in fishingPressure.ts. */
+  sheltered: boolean;
 }
 
 /**
@@ -62,12 +64,24 @@ export interface DangerLedgeInputs {
  * alongside the raw R2-vs-threshold comparison, so this needs the whole
  * chronological series rather than one hour in isolation. `danger_flag`
  * mirrors `dangerTier === 'dangerous'`.
+ *
+ * Wave runup is entirely an ocean-swell phenomenon: the Hs/Tp fed in here
+ * come from an open-water model queried at the ledge's own coordinate, which
+ * for a sheltered harbour ledge returns whatever the nearest open-water grid
+ * cell is doing — swell that never actually reaches in past the harbour
+ * mouth. Stockdon R2 computed from that number is fiction, not a smaller
+ * real danger, so a sheltered ledge gets null (no reading) rather than a
+ * runup-driven caution/dangerous flag it can't physically earn.
  */
 export function computeDangerSeries(
   ledge: DangerLedgeInputs,
   hours: ReadonlyArray<DangerHourInput>,
   trendWindowHours: number,
 ): DangerHourResult[] {
+  if (ledge.sheltered) {
+    return hours.map(() => ({ r2EstimateM: null, dangerTier: null, dangerFlag: null }));
+  }
+
   const tanBeta = ledge.slopeEstimate ?? DEFAULT_SLOPE_TANB;
   const threshold = ledge.platformHeightM * ledge.safetyMargin;
   const cautionThreshold = threshold * CAUTION_THRESHOLD_FRACTION;

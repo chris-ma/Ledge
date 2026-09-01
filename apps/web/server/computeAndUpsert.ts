@@ -127,6 +127,7 @@ export async function computeAndUpsertForLedge(ledge: Ledge): Promise<ComputeAnd
       platformHeightM: ledge.platformHeightM,
       safetyMargin: ledge.safetyMargin,
       slopeEstimate: ledge.slopeEstimate,
+      sheltered: ledge.sheltered,
     },
     merged,
     TREND_WINDOW_HOURS,

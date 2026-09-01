@@ -42,7 +42,7 @@ describe("trailingDelta", () => {
 
 describe("computeDangerSeries", () => {
   // threshold = platformHeightM(2) * safetyMargin(0.7) = 1.4m; caution = 1.05m
-  const ledge = { platformHeightM: 2, safetyMargin: 0.7, slopeEstimate: 0.1 };
+  const ledge = { platformHeightM: 2, safetyMargin: 0.7, slopeEstimate: 0.1, sheltered: false };
 
   it("flags dangerous when R2 exceeds the threshold", () => {
     const [result] = computeDangerSeries(ledge, [{ hsM: 4, tpS: 14, tideRateCmPerHr: 0 }], 3);
@@ -69,6 +69,21 @@ describe("computeDangerSeries", () => {
 
   it("returns nulls when hs or tp is missing", () => {
     const [result] = computeDangerSeries(ledge, [{ hsM: null, tpS: 10, tideRateCmPerHr: 0 }], 3);
+    expect(result.r2EstimateM).toBeNull();
+    expect(result.dangerTier).toBeNull();
+    expect(result.dangerFlag).toBeNull();
+  });
+
+  it("returns nulls for a sheltered ledge regardless of how large the swell reading is", () => {
+    // Same Hs/Tp that reads "dangerous" for an exposed ledge above — a
+    // sheltered ledge's Hs/Tp comes from the nearest open-water grid cell,
+    // not swell that actually reaches it, so runup from it isn't real.
+    const shelteredLedge = { ...ledge, sheltered: true };
+    const [result] = computeDangerSeries(
+      shelteredLedge,
+      [{ hsM: 4, tpS: 14, tideRateCmPerHr: 0 }],
+      3,
+    );
     expect(result.r2EstimateM).toBeNull();
     expect(result.dangerTier).toBeNull();
     expect(result.dangerFlag).toBeNull();
