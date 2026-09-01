@@ -152,11 +152,18 @@ describe("assignCoastlineToLedges", () => {
   });
 
   it("splits into separate runs where the nearest ledge changes", () => {
+    // Walks North Head -> Fairy Bower in ~200m steps, so the run only breaks
+    // on the ownership change and not on the large-gap rule.
     const way: [number, number][] = [
-      [-33.8150, 151.3010], // nearest North Head
-      [-33.8100, 151.2990],
-      [-33.8010, 151.2945], // nearest Fairy Bower
-      [-33.8008, 151.2944],
+      [-33.81500, 151.30100], // nearest North Head
+      [-33.81323, 151.30018],
+      [-33.81145, 151.29935],
+      [-33.80968, 151.29853],
+      [-33.80790, 151.29770],
+      [-33.80613, 151.29688],
+      [-33.80435, 151.29605],
+      [-33.80258, 151.29523],
+      [-33.80080, 151.29440], // nearest Fairy Bower
     ];
     const runs = assignCoastlineToLedges([way], [NORTH_HEAD, FAIRY_BOWER], 2.5, 0);
     expect(runs.length).toBeGreaterThanOrEqual(2);
@@ -187,6 +194,33 @@ describe("assignCoastlineToLedges", () => {
     ];
     const runs = assignCoastlineToLedges([way], [NORTH_HEAD], 2.5, 15);
     expect(runs[0].path).toEqual([way[0], way[4]]);
+  });
+
+  it("breaks the run across a polygon's closing edge rather than drawing over water", () => {
+    // Two short stretches of real shore with a ~1km hop between them, which
+    // is what a bay-mouth closing edge looks like in a water ring.
+    const way: [number, number][] = [
+      [-33.8150, 151.3010],
+      [-33.8151, 151.3011],
+      [-33.8230, 151.3020], // ~900m jump
+      [-33.8231, 151.3021],
+    ];
+    const runs = assignCoastlineToLedges([way], [NORTH_HEAD], 2.5, 0, 400);
+    expect(runs).toHaveLength(2);
+    for (const run of runs) {
+      expect(run.path).toHaveLength(2);
+    }
+  });
+
+  it("keeps a run together when vertices are merely sparse", () => {
+    const way: [number, number][] = [
+      [-33.8150, 151.3010],
+      [-33.8152, 151.3012], // ~30m
+      [-33.8154, 151.3014],
+    ];
+    const runs = assignCoastlineToLedges([way], [NORTH_HEAD], 2.5, 0, 400);
+    expect(runs).toHaveLength(1);
+    expect(runs[0].path).toHaveLength(3);
   });
 
   it("drops a run left with a single point", () => {

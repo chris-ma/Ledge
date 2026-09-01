@@ -40,6 +40,17 @@ export const MAX_ASSIGN_DISTANCE_KM = 2.5;
  */
 export const MIN_VERTEX_SPACING_M = 15;
 
+/**
+ * A water area is a closed ring, and part of that ring is the artificial
+ * edge drawn straight across a bay mouth or river entrance to close the
+ * polygon — open water, not shoreline. Those closing edges show up as a
+ * single huge hop between consecutive vertices (they were rendering as long
+ * straight lines cutting across the harbour), whereas genuine mapped
+ * shoreline steps along in much smaller increments. Breaking a run wherever
+ * consecutive vertices are further apart than this drops them.
+ */
+export const MAX_VERTEX_GAP_M = 400;
+
 /** A run of coastline that belongs to one ledge, in coastline order. */
 export interface CoastlineRun {
   ledgeId: string;
@@ -219,12 +230,14 @@ export function assignCoastlineToLedges(
   ledges: ReadonlyArray<LedgeAnchor>,
   maxDistanceKm: number = MAX_ASSIGN_DISTANCE_KM,
   minVertexSpacingM: number = MIN_VERTEX_SPACING_M,
+  maxVertexGapM: number = MAX_VERTEX_GAP_M,
 ): CoastlineRun[] {
   const runs: CoastlineRun[] = [];
 
   for (const way of ways) {
     let currentLedgeId: string | null = null;
     let currentPath: [number, number][] = [];
+    let previous: [number, number] | null = null;
 
     const flush = () => {
       // A single point can't draw a line.
@@ -236,12 +249,21 @@ export function assignCoastlineToLedges(
     };
 
     for (const [lat, lon] of way) {
+      // A jump this large isn't shoreline — it's a polygon's closing edge
+      // across open water. Never draw across it.
+      const jumped =
+        previous !== null && distanceKm(previous[0], previous[1], lat, lon) * 1000 > maxVertexGapM;
+      previous = [lat, lon];
+
       const owner = nearestLedge(lat, lon, ledges, maxDistanceKm);
       if (!owner) {
         flush();
         continue;
       }
-      if (owner.id !== currentLedgeId) {
+      if (jumped) {
+        flush();
+        currentLedgeId = owner.id;
+      } else if (owner.id !== currentLedgeId) {
         // Carry the boundary node into the next run too, so adjacent ledges'
         // stretches meet rather than leaving a one-segment gap between them.
         const boundary = currentPath.length > 0 ? currentPath[currentPath.length - 1] : null;
