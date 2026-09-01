@@ -4,6 +4,7 @@ import { HourSlider } from "@/components/map/HourSlider";
 import { LedgeMarkers } from "@/components/map/LedgeMarkers";
 import { MapLegend } from "@/components/map/MapLegend";
 import { PressureHeatmap } from "@/components/map/PressureHeatmap";
+import { useCoastline } from "@/hooks/useCoastline";
 import { useConditionsAtRange } from "@/hooks/useConditionsAtRange";
 import { useLedges } from "@/hooks/useLedges";
 import { computeRegionalTideSeries } from "@/lib/tide";
@@ -18,6 +19,7 @@ export function MapPage() {
   const { fromIso, toIso } = useMemo(() => getDefaultWindowIso(), []);
 
   const ledgesQuery = useLedges();
+  const coastlineQuery = useCoastline();
   const conditionsQuery = useConditionsAtRange(fromIso, toIso);
   const conditions = conditionsQuery.data ?? [];
 
@@ -67,11 +69,14 @@ export function MapPage() {
                 maxZoom={19}
                 maxNativeZoom={16}
               />
+              {coastlineQuery.data && (
+                <PressureHeatmap
+                  coastline={coastlineQuery.data}
+                  conditionsByLedgeId={conditionsByLedgeId}
+                />
+              )}
               {ledgesQuery.data && (
-                <>
-                  <PressureHeatmap ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
-                  <LedgeMarkers ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
-                </>
+                <LedgeMarkers ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
               )}
             </MapContainer>
 

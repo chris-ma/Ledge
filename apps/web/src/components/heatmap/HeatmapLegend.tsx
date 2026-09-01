@@ -23,7 +23,7 @@ export function HeatmapLegend() {
         </div>
         <div className="mt-1 text-[11px] text-slate-500">
           Red = ideal — more swell/tide pushing onto the ledge right now. Shown as colored cells on a ledge's page,
-          and as a short line at each ledge's shoreline on the map once you zoom in close enough to see it.
+          and painted along the shoreline itself on the map.
         </div>
         <div className="mt-2 flex items-center gap-2">
           <span

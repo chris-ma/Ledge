@@ -1,7 +1,14 @@
 // Thin fetch wrappers against the /api/* contract. Plain fetch + relative
 // URLs — same-origin on Vercel, no base URL config, no client env vars.
 
-import type { Ledge, LedgeCondition, LedgeConditionsResponse, LedgesResponse } from "./types";
+import type {
+  CoastlineResponse,
+  CoastlineSegment,
+  Ledge,
+  LedgeCondition,
+  LedgeConditionsResponse,
+  LedgesResponse,
+} from "./types";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url);
@@ -14,6 +21,11 @@ async function fetchJson<T>(url: string): Promise<T> {
 export async function fetchLedges(): Promise<Ledge[]> {
   const data = await fetchJson<LedgesResponse>("/api/ledges");
   return data.ledges;
+}
+
+export async function fetchCoastline(): Promise<CoastlineSegment[]> {
+  const data = await fetchJson<CoastlineResponse>("/api/coastline");
+  return data.segments;
 }
 
 export interface FetchLedgeConditionsParams {

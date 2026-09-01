@@ -22,6 +22,9 @@ export interface Ledge {
   /** The coordinate the most recent successful tide fetch actually used — null until the first success. */
   weatherStationLat: number | null;
   weatherStationLon: number | null;
+  /** lat/lon snapped onto the nearest real coastline vertex — where the water's edge actually is. Null until the coastline has been built. */
+  shoreLat: number | null;
+  shoreLon: number | null;
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
 }
@@ -57,8 +60,20 @@ export interface LedgeCondition {
   createdAt: string;
 }
 
+/** A run of real coastline belonging to one ledge — the map paints Fishing Condition along these. */
+export interface CoastlineSegment {
+  id: string;
+  ledgeId: string;
+  /** [[lat, lon], ...] in coastline order. */
+  path: [number, number][];
+}
+
 export interface LedgesResponse {
   ledges: Ledge[];
+}
+
+export interface CoastlineResponse {
+  segments: CoastlineSegment[];
 }
 
 export interface LedgeConditionsResponse {

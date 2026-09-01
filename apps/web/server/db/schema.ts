@@ -4,6 +4,7 @@ import {
   customType,
   doublePrecision,
   index,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -68,6 +69,15 @@ export const ledges = pgTable(
     // tide's behavior. Null until the first successful tide fetch.
     weatherStationLat: doublePrecision("weather_station_lat"),
     weatherStationLon: doublePrecision("weather_station_lon"),
+    // lat/lon above is a landmark-level estimate that can sit inland (North
+    // Head's, for one, lands well back on the headland rather than on the
+    // cliff edge). These are that point snapped onto the nearest real OSM
+    // coastline node — see server/coastline.ts — so the map can mark where
+    // the water's edge actually is without disturbing lat/lon, which is what
+    // the swell/tide queries are keyed on. Null until the coastline has been
+    // built at least once.
+    shoreLat: doublePrecision("shore_lat"),
+    shoreLon: doublePrecision("shore_lon"),
     geog: geographyPoint("geog").generatedAlwaysAs(
       sql`ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography`,
     ),
@@ -148,7 +158,37 @@ export const ledgeConditions = pgTable(
   ],
 );
 
+/**
+ * A run of real coastline (OSM `natural=coastline` nodes, in order) that is
+ * closer to this ledge than to any other — so the map can paint the actual
+ * water's edge in that ledge's Fishing Condition colour rather than drawing
+ * a synthetic mark at a point. Rebuilt wholesale (delete-then-insert) by
+ * server/coastline.ts; it is derived geometry, not hand-maintained data.
+ *
+ * `path` is a JSON array of [lat, lon] pairs rather than a PostGIS
+ * linestring: nothing queries it spatially (it is fetched whole and handed
+ * straight to Leaflet), and jsonb avoids both a second customType and the
+ * drizzle-kit geography quoting quirk documented above.
+ */
+export const coastlineSegments = pgTable(
+  "coastline_segments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ledgeId: uuid("ledge_id")
+      .notNull()
+      .references(() => ledges.id, { onDelete: "cascade" }),
+    /** [[lat, lon], ...] in coastline order. */
+    path: jsonb("path").$type<[number, number][]>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("coastline_segments_ledge_idx").on(table.ledgeId)],
+);
+
 export type Ledge = typeof ledges.$inferSelect;
 export type NewLedge = typeof ledges.$inferInsert;
 export type LedgeCondition = typeof ledgeConditions.$inferSelect;
 export type NewLedgeCondition = typeof ledgeConditions.$inferInsert;
+export type CoastlineSegment = typeof coastlineSegments.$inferSelect;
+export type NewCoastlineSegment = typeof coastlineSegments.$inferInsert;

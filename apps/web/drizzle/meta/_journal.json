@@ -29,6 +29,13 @@
       "when": 1788136820428,
       "tag": "0003_reflective_madame_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788240362686,
+      "tag": "0004_red_kang",
+      "breakpoints": true
     }
   ]
 }

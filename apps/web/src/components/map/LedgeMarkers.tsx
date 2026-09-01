@@ -37,7 +37,13 @@ export function LedgeMarkers({ ledges, conditionsByLedgeId }: LedgeMarkersProps)
       {ledges.map((ledge) => {
         const condition = conditionsByLedgeId.get(ledge.id);
         const fishingPressure = condition?.fishingPressure ?? null;
-        const position: [number, number] = [ledge.lat, ledge.lon];
+        // Prefer the coastline-snapped point: several seed coordinates sit
+        // inland of the water's edge, and the tap target should sit on the
+        // coloured shoreline the user is actually aiming at.
+        const position: [number, number] =
+          ledge.shoreLat !== null && ledge.shoreLon !== null
+            ? [ledge.shoreLat, ledge.shoreLon]
+            : [ledge.lat, ledge.lon];
         const offsetKm = weatherStationOffsetKm(ledge);
 
         return (
