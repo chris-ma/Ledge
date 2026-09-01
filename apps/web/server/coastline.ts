@@ -211,10 +211,18 @@ export function snapLedgesToCoastline(
   return snapped;
 }
 
+// Overpass asks clients to identify themselves, and some instances reject
+// requests carrying a bare runtime default.
+const USER_AGENT = "LedgeLords/1.0 (Sydney rock-fishing conditions; one-off coastline build)";
+
 /**
- * Fetches coastline ways near the given ledges. Tries the mirrors in order —
- * Overpass instances rate-limit and go down for maintenance routinely, and a
- * one-off geometry build shouldn't fail over a busy public instance.
+ * Fetches coastline ways near the given ledges. Tries each mirror, and both
+ * POST encodings Overpass accepts (form-encoded `data=`, and the raw query
+ * as the body) — instances differ on which they'll take, and a rejection
+ * from one shouldn't sink a one-off geometry build. Error bodies are carried
+ * into the thrown message: Overpass explains syntax and load problems in the
+ * body, and this can only be run against the live deployment, so a blind
+ * "HTTP 400" would be very expensive to debug.
  */
 export async function fetchCoastlineWays(
   ledges: ReadonlyArray<LedgeAnchor>,
@@ -223,27 +231,44 @@ export async function fetchCoastlineWays(
   const query = buildOverpassQuery(ledges, radiusM);
   const errors: string[] = [];
 
+  const attempts: { contentType: string; body: string }[] = [
+    {
+      contentType: "application/x-www-form-urlencoded",
+      body: new URLSearchParams({ data: query }).toString(),
+    },
+    { contentType: "text/plain; charset=utf-8", body: query },
+  ];
+
   for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ data: query }).toString(),
-      });
-      if (!response.ok) {
-        errors.push(`${endpoint} -> HTTP ${response.status}`);
-        continue;
+    for (const attempt of attempts) {
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": attempt.contentType,
+            "User-Agent": USER_AGENT,
+            Accept: "application/json",
+          },
+          body: attempt.body,
+        });
+        if (!response.ok) {
+          const detail = (await response.text()).replace(/\s+/g, " ").trim().slice(0, 400);
+          errors.push(`${endpoint} [${attempt.contentType}] -> HTTP ${response.status}: ${detail}`);
+          continue;
+        }
+        const ways = parseOverpassCoastline(await response.json());
+        if (ways.length === 0) {
+          errors.push(`${endpoint} [${attempt.contentType}] -> 0 coastline ways`);
+          continue;
+        }
+        return ways;
+      } catch (err) {
+        errors.push(
+          `${endpoint} [${attempt.contentType}] -> ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      const ways = parseOverpassCoastline(await response.json());
-      if (ways.length === 0) {
-        errors.push(`${endpoint} -> 0 coastline ways`);
-        continue;
-      }
-      return ways;
-    } catch (err) {
-      errors.push(`${endpoint} -> ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
-  throw new Error(`Every Overpass endpoint failed: ${errors.join("; ")}`);
+  throw new Error(`Every Overpass attempt failed: ${errors.join(" | ")}`);
 }
