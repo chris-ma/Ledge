@@ -46,8 +46,18 @@ export const TREND_WINDOW_HOURS = 3;
 // tide term is new — ODB's tidal current vector (u/v), previously fetched
 // but unused, gives a real modelled flood/ebb direction+speed per hour
 // rather than us guessing "rising tide favours which compass bearing".
-/** Swell term uses the same wave_load scale as the LLI model. */
-export const FISHING_WAVE_LOAD_REF_MAX = WAVE_LOAD_REF_MAX;
+/**
+ * Independent of the LLI's WAVE_LOAD_REF_MAX above — that one is pinned to a
+ * genuinely extreme swell (Hs 4m) because it drives a *safety* threshold,
+ * where erring toward "rarely saturates" is the right failure mode. This one
+ * drives the "how good is the fishing right now" color scale, where pinning
+ * to the same rare-event magnitude meant the top of the scale (orange/red)
+ * was effectively unreachable under any realistic Sydney swell — real
+ * observed Hs topped out around 1.9m even on this window's best day, so
+ * every hour landed in the bottom third of the range. Reference instead is
+ * "a solid, well-formed swell": Hs 2m, Tp 15s -> 2^2*15 = 60.
+ */
+export const FISHING_WAVE_LOAD_REF_MAX = 60;
 /** A brisk tidal current for the open Sydney coast — saturation point for
  * the tide term's 0-1 normalization. Corrected from an initial guess of 0.3
  * (30 cm/s) after seeing real ODB/TPXO output for these ledges: observed

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TIDE_CURRENT_PRESSURE_REF_MAX_MS } from "./constants.js";
+import { FISHING_WAVE_LOAD_REF_MAX, TIDE_CURRENT_PRESSURE_REF_MAX_MS } from "./constants.js";
 import {
   computeFishingPressureForHour,
   computeFishingPressureIndex,
@@ -53,12 +53,12 @@ describe("computeFishingPressureIndex", () => {
   });
 
   it("saturates at 100 when both terms are at/above their reference max", () => {
-    expect(computeFishingPressureIndex(200, TIDE_CURRENT_PRESSURE_REF_MAX_MS)).toBe(100);
+    expect(computeFishingPressureIndex(FISHING_WAVE_LOAD_REF_MAX, TIDE_CURRENT_PRESSURE_REF_MAX_MS)).toBe(100);
   });
 
   it("blends partial terms evenly (0.5/0.5 weights)", () => {
     // swell at half its ref max, tide at zero -> 0.5 * 0.5 * 100 = 25
-    expect(computeFishingPressureIndex(100, 0)).toBe(25);
+    expect(computeFishingPressureIndex(FISHING_WAVE_LOAD_REF_MAX / 2, 0)).toBe(25);
   });
 });
 

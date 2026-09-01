@@ -19,7 +19,12 @@
 
 import type { LedgeCondition } from "./types";
 
-const WAVE_LOAD_REF_MAX = 200;
+// Deliberately lower than the LLI (safety) model's own wave-load reference
+// would be — that one's pinned to a rare, genuinely extreme swell, which
+// would leave this "how good is the fishing" scale's orange/red end
+// unreachable under any realistic Sydney swell. See the matching comment in
+// server/model/constants.ts for the reasoning and the reference figure.
+const FISHING_WAVE_LOAD_REF_MAX = 60;
 const TIDE_CURRENT_PRESSURE_REF_MAX_MS = 0.03;
 const SWELL_WEIGHT = 0.5;
 const TIDE_WEIGHT = 0.5;
@@ -71,7 +76,7 @@ export function localFishingCondition(
   // Swell hitting square on counts fully; swell running past the aspect
   // counts for progressively less, and nothing from behind it.
   const waveLoad = hsM ** 2 * tpS * directionalClamp(angleDiffDeg(swellDirDeg, facingBearingDeg));
-  const swellNorm = clamp(waveLoad / WAVE_LOAD_REF_MAX, 0, 1);
+  const swellNorm = clamp(waveLoad / FISHING_WAVE_LOAD_REF_MAX, 0, 1);
 
   return Math.round(clamp(SWELL_WEIGHT * swellNorm + TIDE_WEIGHT * tideNorm, 0, 1) * 100);
 }
