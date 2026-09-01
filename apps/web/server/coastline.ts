@@ -54,45 +54,124 @@ export interface LedgeAnchor {
 }
 
 /**
- * An Overpass QL query for coastline within COASTLINE_FETCH_RADIUS_M of any
- * of these ledges. `out geom` inlines each way's vertices, so one round trip
- * returns everything without a second node lookup.
+ * OSM only runs `natural=coastline` around the open coast and the harbour
+ * mouth; deeper inside Port Jackson the water is mapped as areas instead, so
+ * a coastline-only query leaves every inner-harbour ledge (Bradleys Head,
+ * Cremorne, Kirribilli, Blues Point, Balmoral, Chowder Bay) with no shore at
+ * all — confirmed on the first live build. Water-area rings fill that gap;
+ * their outline *is* the harbour's shoreline.
+ */
+const WATER_FILTERS = ['["natural"="water"]', '["waterway"="riverbank"]'];
+
+/**
+ * Water areas are pulled in by tag, which also catches ponds and reservoirs
+ * that happen to sit within reach of a harbour ledge. Anything whose bounding
+ * box is smaller than this across isn't harbour shoreline and would just
+ * paint a coloured ring around a park pond.
+ */
+export const MIN_WATER_RING_EXTENT_M = 300;
+
+/** One way's geometry, tagged by whether it came from `natural=coastline`. */
+export interface CoastlineWay {
+  path: [number, number][];
+  /** False for water-area rings, which are size-filtered before use. */
+  isCoastline: boolean;
+}
+
+/**
+ * An Overpass QL query for shoreline within COASTLINE_FETCH_RADIUS_M of any
+ * of these ledges — open-coast `natural=coastline` plus harbour water-area
+ * rings. `out geom` inlines vertices (including relation members'), so one
+ * round trip returns everything without a second node lookup.
  */
 export function buildOverpassQuery(
   ledges: ReadonlyArray<LedgeAnchor>,
   radiusM: number = COASTLINE_FETCH_RADIUS_M,
 ): string {
-  const clauses = ledges
-    .map((l) => `way["natural"="coastline"](around:${radiusM},${l.lat},${l.lon});`)
-    .join("\n  ");
-  return `[out:json][timeout:180];\n(\n  ${clauses}\n);\nout geom;`;
+  const clauses: string[] = [];
+  for (const l of ledges) {
+    const around = `(around:${radiusM},${l.lat},${l.lon})`;
+    clauses.push(`way["natural"="coastline"]${around};`);
+    for (const filter of WATER_FILTERS) {
+      clauses.push(`way${filter}${around};`);
+      clauses.push(`relation${filter}${around};`);
+    }
+  }
+  return `[out:json][timeout:180];\n(\n  ${clauses.join("\n  ")}\n);\nout geom;`;
+}
+
+function readGeometry(geometry: unknown): [number, number][] {
+  if (!Array.isArray(geometry)) return [];
+  const path: [number, number][] = [];
+  for (const point of geometry) {
+    if (!point || typeof point !== "object") continue;
+    const { lat, lon } = point as { lat?: unknown; lon?: unknown };
+    if (typeof lat === "number" && typeof lon === "number") path.push([lat, lon]);
+  }
+  return path;
 }
 
 /**
- * Pulls each way's vertex list out of an Overpass `out geom` response.
- * Ways with fewer than 2 vertices can't draw a line and are dropped.
+ * Pulls each way's vertex list out of an Overpass `out geom` response,
+ * including the member ways of water multipolygon relations (Port Jackson is
+ * mapped that way). Ways with fewer than 2 vertices can't draw a line and
+ * are dropped.
  */
-export function parseOverpassCoastline(body: unknown): [number, number][][] {
+export function parseOverpassCoastline(body: unknown): CoastlineWay[] {
   if (!body || typeof body !== "object" || !Array.isArray((body as { elements?: unknown }).elements)) {
     throw new Error(
       `Unexpected Overpass response shape: ${JSON.stringify(body).slice(0, 300)}`,
     );
   }
-  const ways: [number, number][][] = [];
+
+  const ways: CoastlineWay[] = [];
   for (const element of (body as { elements: unknown[] }).elements) {
     if (!element || typeof element !== "object") continue;
-    const geometry = (element as { geometry?: unknown }).geometry;
-    if (!Array.isArray(geometry)) continue;
+    const el = element as { tags?: Record<string, unknown>; geometry?: unknown; members?: unknown };
+    const isCoastline = el.tags?.natural === "coastline";
 
-    const path: [number, number][] = [];
-    for (const point of geometry) {
-      if (!point || typeof point !== "object") continue;
-      const { lat, lon } = point as { lat?: unknown; lon?: unknown };
-      if (typeof lat === "number" && typeof lon === "number") path.push([lat, lon]);
+    const own = readGeometry(el.geometry);
+    if (own.length >= 2) ways.push({ path: own, isCoastline });
+
+    // Relations carry their geometry per member way.
+    if (Array.isArray(el.members)) {
+      for (const member of el.members) {
+        if (!member || typeof member !== "object") continue;
+        const path = readGeometry((member as { geometry?: unknown }).geometry);
+        if (path.length >= 2) ways.push({ path, isCoastline });
+      }
     }
-    if (path.length >= 2) ways.push(path);
   }
   return ways;
+}
+
+/** Rough bounding-box diagonal of a path, in metres. */
+function extentM(path: ReadonlyArray<[number, number]>): number {
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  let minLon = Infinity;
+  let maxLon = -Infinity;
+  for (const [lat, lon] of path) {
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+    if (lon < minLon) minLon = lon;
+    if (lon > maxLon) maxLon = lon;
+  }
+  return distanceKm(minLat, minLon, maxLat, maxLon) * 1000;
+}
+
+/**
+ * Drops water rings too small to be harbour shoreline (park ponds and the
+ * like). Coastline ways are kept regardless — they're the open coast by
+ * definition, however short a given fragment happens to be.
+ */
+export function filterShorelineWays(
+  ways: ReadonlyArray<CoastlineWay>,
+  minWaterExtentM: number = MIN_WATER_RING_EXTENT_M,
+): [number, number][][] {
+  return ways
+    .filter((w) => w.isCoastline || extentM(w.path) >= minWaterExtentM)
+    .map((w) => w.path);
 }
 
 /** Nearest ledge to a point, or null if none is within maxDistanceKm. */
@@ -256,9 +335,9 @@ export async function fetchCoastlineWays(
           errors.push(`${endpoint} [${attempt.contentType}] -> HTTP ${response.status}: ${detail}`);
           continue;
         }
-        const ways = parseOverpassCoastline(await response.json());
+        const ways = filterShorelineWays(parseOverpassCoastline(await response.json()));
         if (ways.length === 0) {
-          errors.push(`${endpoint} [${attempt.contentType}] -> 0 coastline ways`);
+          errors.push(`${endpoint} [${attempt.contentType}] -> 0 shoreline ways`);
           continue;
         }
         return ways;

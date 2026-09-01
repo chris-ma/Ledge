@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assignCoastlineToLedges,
   buildOverpassQuery,
+  filterShorelineWays,
   parseOverpassCoastline,
   snapLedgesToCoastline,
   type LedgeAnchor,
@@ -11,20 +12,27 @@ const NORTH_HEAD: LedgeAnchor = { id: "north-head", lat: -33.815, lon: 151.301 }
 const FAIRY_BOWER: LedgeAnchor = { id: "fairy-bower", lat: -33.8008, lon: 151.2944 };
 
 describe("buildOverpassQuery", () => {
-  it("emits one around-clause per ledge at the given radius", () => {
+  it("emits a coastline around-clause per ledge at the given radius", () => {
     const query = buildOverpassQuery([NORTH_HEAD, FAIRY_BOWER], 2500);
     expect(query).toContain(`way["natural"="coastline"](around:2500,-33.815,151.301);`);
     expect(query).toContain(`way["natural"="coastline"](around:2500,-33.8008,151.2944);`);
     expect(query).toContain("out geom;");
   });
+
+  it("also asks for water areas, which is how the inner harbour is mapped", () => {
+    const query = buildOverpassQuery([NORTH_HEAD], 2500);
+    expect(query).toContain(`way["natural"="water"](around:2500,-33.815,151.301);`);
+    expect(query).toContain(`relation["natural"="water"](around:2500,-33.815,151.301);`);
+  });
 });
 
 describe("parseOverpassCoastline", () => {
-  it("extracts each way's vertices", () => {
+  it("extracts each way's vertices and flags coastline ways", () => {
     const ways = parseOverpassCoastline({
       elements: [
         {
           type: "way",
+          tags: { natural: "coastline" },
           geometry: [
             { lat: -33.81, lon: 151.3 },
             { lat: -33.811, lon: 151.301 },
@@ -33,11 +41,52 @@ describe("parseOverpassCoastline", () => {
       ],
     });
     expect(ways).toEqual([
-      [
-        [-33.81, 151.3],
-        [-33.811, 151.301],
-      ],
+      {
+        isCoastline: true,
+        path: [
+          [-33.81, 151.3],
+          [-33.811, 151.301],
+        ],
+      },
     ]);
+  });
+
+  it("flags water areas as non-coastline", () => {
+    const ways = parseOverpassCoastline({
+      elements: [
+        {
+          type: "way",
+          tags: { natural: "water" },
+          geometry: [
+            { lat: -33.81, lon: 151.3 },
+            { lat: -33.811, lon: 151.301 },
+          ],
+        },
+      ],
+    });
+    expect(ways[0].isCoastline).toBe(false);
+  });
+
+  it("reads a relation's member geometry", () => {
+    const ways = parseOverpassCoastline({
+      elements: [
+        {
+          type: "relation",
+          tags: { natural: "water" },
+          members: [
+            {
+              type: "way",
+              geometry: [
+                { lat: -33.85, lon: 151.24 },
+                { lat: -33.851, lon: 151.241 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect(ways).toHaveLength(1);
+    expect(ways[0].path).toHaveLength(2);
   });
 
   it("drops ways with fewer than two vertices", () => {
@@ -54,6 +103,29 @@ describe("parseOverpassCoastline", () => {
 
   it("throws on a response that isn't an Overpass result", () => {
     expect(() => parseOverpassCoastline({ error: "rate limited" })).toThrow(/Unexpected Overpass/);
+  });
+});
+
+describe("filterShorelineWays", () => {
+  const tiny: [number, number][] = [
+    [-33.8500, 151.2400],
+    [-33.8502, 151.2402], // ~30m across
+  ];
+  const big: [number, number][] = [
+    [-33.8500, 151.2400],
+    [-33.8560, 151.2470], // ~900m across
+  ];
+
+  it("keeps a large water ring", () => {
+    expect(filterShorelineWays([{ path: big, isCoastline: false }], 300)).toEqual([big]);
+  });
+
+  it("drops a pond-sized water ring", () => {
+    expect(filterShorelineWays([{ path: tiny, isCoastline: false }], 300)).toEqual([]);
+  });
+
+  it("keeps a short coastline fragment regardless of size", () => {
+    expect(filterShorelineWays([{ path: tiny, isCoastline: true }], 300)).toEqual([tiny]);
   });
 });
 
