@@ -31,14 +31,14 @@ function glowRadiusPx(zoom: number): number {
   return Math.round(Math.min(GLOW_RADIUS_MAX_PX, Math.max(GLOW_RADIUS_MIN_PX, scaled)));
 }
 /**
- * Peak alpha at a glow's centre scales with the score itself, not a flat
- * value: a cold, "nothing happening here" reading should all but disappear
- * into the base map, while a genuinely warm spot is the thing that's meant
- * to draw the eye. Both ends stay well under 1 — even the hottest spot
- * stays translucent, so the map is always visible underneath.
+ * Peak alpha at a glow's centre scales with the score, so a genuinely hot
+ * spot still reads as the most solid thing on the map. But both ends sit
+ * high: cool/calm readings need to stay clearly visible and solidly
+ * coloured too, not fade toward invisible — a blank stretch of coast reads
+ * as missing data, not as "nothing happening right now".
  */
-const GLOW_ALPHA_MIN = 0.08;
-const GLOW_ALPHA_MAX = 0.55;
+const GLOW_ALPHA_MIN = 0.65;
+const GLOW_ALPHA_MAX = 0.88;
 
 function glowPeakAlpha(score: number): number {
   const t = Math.min(100, Math.max(0, score)) / 100;

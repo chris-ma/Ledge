@@ -22,15 +22,27 @@ const OVERPASS_ENDPOINTS = [
   "https://overpass.kumi.systems/api/interpreter",
 ];
 
-/** How far around each ledge to pull coastline. Enough to read as a stretch of coast, not a dot. */
-export const COASTLINE_FETCH_RADIUS_M = 2500;
+/**
+ * How far around each ledge to pull coastline. Originally 2500 (just enough
+ * to read as a stretch of coast, not a dot), but at that radius the 20
+ * ledges' claimed stretches don't reach each other — most neighbouring
+ * ledges are 1-7km apart along the coast (see the nearest-neighbour survey
+ * in the calibration history), so the map showed isolated coloured patches
+ * with bare gaps between them at named beaches with no seeded ledge nearby.
+ * Doubled so adjacent ledges' 5km reaches overlap and meet, closing every
+ * gap under ~10km. Barrenjoey Head is the one ledge still isolated (its
+ * nearest neighbour is 16.9km away, up the whole unseeded northern-beaches
+ * stretch) — no reach short of a new anchor ledge closes that one.
+ */
+export const COASTLINE_FETCH_RADIUS_M = 5000;
 
 /**
  * A coastline node further than this from every ledge is dropped: the app
  * only claims to describe the shoreline its ledges actually speak for, so
- * the overlay shouldn't bleed off down coast we have no data for.
+ * the overlay shouldn't bleed off down coast we have no data for. Kept equal
+ * to the fetch radius so nothing fetched goes unassigned right at the edge.
  */
-export const MAX_ASSIGN_DISTANCE_KM = 2.5;
+export const MAX_ASSIGN_DISTANCE_KM = 5;
 
 /**
  * Consecutive nodes closer together than this are thinned out. OSM coastline
