@@ -30,8 +30,20 @@ function glowRadiusPx(zoom: number): number {
   const scaled = GLOW_RADIUS_AT_REFERENCE_ZOOM_PX * 2 ** (zoom - GLOW_RADIUS_REFERENCE_ZOOM);
   return Math.round(Math.min(GLOW_RADIUS_MAX_PX, Math.max(GLOW_RADIUS_MIN_PX, scaled)));
 }
-/** Peak alpha at a glow's centre. Kept under 1 so overlapping glows blend and stack into a hot core instead of clipping to a hard edge immediately. */
-const GLOW_ALPHA = 0.42;
+/**
+ * Peak alpha at a glow's centre scales with the score itself, not a flat
+ * value: a cold, "nothing happening here" reading should all but disappear
+ * into the base map, while a genuinely warm spot is the thing that's meant
+ * to draw the eye. Both ends stay well under 1 — even the hottest spot
+ * stays translucent, so the map is always visible underneath.
+ */
+const GLOW_ALPHA_MIN = 0.08;
+const GLOW_ALPHA_MAX = 0.55;
+
+function glowPeakAlpha(score: number): number {
+  const t = Math.min(100, Math.max(0, score)) / 100;
+  return GLOW_ALPHA_MIN + (GLOW_ALPHA_MAX - GLOW_ALPHA_MIN) * t;
+}
 /** Score buckets to pre-render glow sprites for — 5-point steps are finer than the eye reads off a colour ramp. */
 const SCORE_BUCKET = 5;
 /** Extra viewport margin drawn beyond the visible map, as a fraction of its size, so a pan doesn't expose a bare edge before the redraw. */
@@ -63,11 +75,12 @@ function buildGlowSprite(score: number, radius: number): HTMLCanvasElement {
   const g = parseInt(color.slice(3, 5), 16);
   const b = parseInt(color.slice(5, 7), 16);
 
+  const peakAlpha = glowPeakAlpha(score);
   const gradient = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius);
   // Held near full strength through the middle then faded off, so the band
   // has a solid core and a feathered edge rather than looking hollow.
-  gradient.addColorStop(0, `rgba(${r},${g},${b},${GLOW_ALPHA})`);
-  gradient.addColorStop(0.45, `rgba(${r},${g},${b},${GLOW_ALPHA * 0.75})`);
+  gradient.addColorStop(0, `rgba(${r},${g},${b},${peakAlpha})`);
+  gradient.addColorStop(0.45, `rgba(${r},${g},${b},${peakAlpha * 0.75})`);
   gradient.addColorStop(1, `rgba(${r},${g},${b},0)`);
 
   ctx.fillStyle = gradient;
