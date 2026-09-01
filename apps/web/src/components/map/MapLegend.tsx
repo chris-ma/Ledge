@@ -23,7 +23,30 @@ export function MapLegend() {
           <span>100</span>
         </div>
         <div className="mt-1 text-[10px] text-slate-400">Red = ideal right now</div>
+
+        {/* The danger flags are a separate reading from the colour beneath
+            them — best fishing and worst safety often coincide on a rock
+            ledge — so the key states that rather than letting the two scales
+            look like one. */}
+        <div className="mt-2 border-t border-white/10 pt-2">
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-300">
+            <FlagSwatch fill="#f59e0b" />
+            <span>Caution</span>
+            <FlagSwatch fill="#dc2626" />
+            <span>Dangerous</span>
+          </div>
+          <div className="mt-1 text-[10px] text-slate-400">Wave runup — not a fishing rating</div>
+        </div>
       </div>
     </div>
+  );
+}
+
+function FlagSwatch({ fill }: { fill: string }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M6 22V3" stroke="#e2e8f0" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M7 3.5h11.5l-3 4 3 4H7z" fill={fill} stroke="#e2e8f0" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
   );
 }

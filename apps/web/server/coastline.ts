@@ -38,7 +38,7 @@ export const MAX_ASSIGN_DISTANCE_KM = 2.5;
  * places); keeping every vertex would bloat both the stored rows and the
  * JSON the browser downloads for no visible difference.
  */
-export const MIN_VERTEX_SPACING_M = 15;
+export const MIN_VERTEX_SPACING_M = 30;
 
 /**
  * A water area is a closed ring, and part of that ring is the artificial
@@ -55,6 +55,14 @@ export const MAX_VERTEX_GAP_M = 400;
 export interface CoastlineRun {
   ledgeId: string;
   path: [number, number][];
+  /**
+   * Per-vertex compass bearing pointing out to sea, parallel to `path`. The
+   * shore curves, so a single stored facing_bearing can't describe a whole
+   * run: around a headland one stretch faces west while another faces east,
+   * and the same tide pushes onto one and away from the other. This is what
+   * lets the map colour each bit of shore by its own aspect.
+   */
+  bearings: number[];
 }
 
 /** Minimal shape of a ledge needed here — avoids depending on the full DB row type. */
@@ -62,6 +70,8 @@ export interface LedgeAnchor {
   id: string;
   lat: number;
   lon: number;
+  /** Points out to sea; disambiguates which side of the shoreline is seaward. */
+  facingBearing: number;
 }
 
 /**
@@ -185,6 +195,59 @@ export function filterShorelineWays(
     .map((w) => w.path);
 }
 
+/** Compass bearing (0-360, clockwise from north) from one coordinate to another. */
+function bearingBetween(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const p1 = (lat1 * Math.PI) / 180;
+  const p2 = (lat2 * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const y = Math.sin(dLon) * Math.cos(p2);
+  const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dLon);
+  return (((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360;
+}
+
+/** Smallest angle between two bearings, in [0, 180]. */
+function angleDiff(a: number, b: number): number {
+  const diff = Math.abs(a - b) % 360;
+  return diff > 180 ? 360 - diff : diff;
+}
+
+/**
+ * The outward-facing bearing at every vertex of a run: the shoreline's local
+ * tangent turned 90deg, on whichever side points out to sea. The tangent
+ * alone is ambiguous (either normal is perpendicular to the shore), so the
+ * ledge's own facing_bearing — defined as pointing out to sea — picks the
+ * seaward side for the first vertex.
+ *
+ * Every vertex after that follows the previous one rather than the reference.
+ * The vertices are in shoreline order, so the seaward side stays on the same
+ * hand the whole way along; picking each vertex independently off the
+ * reference instead would flip to the landward normal wherever a headland
+ * curves more than 90deg away from it — which is precisely the tip of the
+ * headland, where the aspect matters most.
+ */
+export function computeVertexBearings(
+  path: ReadonlyArray<[number, number]>,
+  seawardReferenceDeg: number,
+): number[] {
+  const bearings: number[] = [];
+
+  for (let i = 0; i < path.length; i++) {
+    // Use the neighbours either side where possible: a chord across the
+    // vertex follows the shore's local run better than one short segment,
+    // which can jitter on finely-mapped coast.
+    const before = path[Math.max(0, i - 1)];
+    const after = path[Math.min(path.length - 1, i + 1)];
+    const tangent = bearingBetween(before[0], before[1], after[0], after[1]);
+
+    const left = (tangent + 270) % 360;
+    const right = (tangent + 90) % 360;
+    const against = i === 0 ? seawardReferenceDeg : bearings[i - 1];
+    bearings.push(angleDiff(left, against) <= angleDiff(right, against) ? left : right);
+  }
+
+  return bearings;
+}
+
 /** Nearest ledge to a point, or null if none is within maxDistanceKm. */
 function nearestLedge(
   lat: number,
@@ -234,6 +297,8 @@ export function assignCoastlineToLedges(
 ): CoastlineRun[] {
   const runs: CoastlineRun[] = [];
 
+  const byId = new Map(ledges.map((l) => [l.id, l]));
+
   for (const way of ways) {
     let currentLedgeId: string | null = null;
     let currentPath: [number, number][] = [];
@@ -242,7 +307,13 @@ export function assignCoastlineToLedges(
     const flush = () => {
       // A single point can't draw a line.
       if (currentLedgeId && currentPath.length >= 2) {
-        runs.push({ ledgeId: currentLedgeId, path: thinPath(currentPath, minVertexSpacingM) });
+        const path = thinPath(currentPath, minVertexSpacingM);
+        const owner = byId.get(currentLedgeId);
+        runs.push({
+          ledgeId: currentLedgeId,
+          path,
+          bearings: computeVertexBearings(path, owner ? owner.facingBearing : 0),
+        });
       }
       currentLedgeId = null;
       currentPath = [];

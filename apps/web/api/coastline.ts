@@ -14,6 +14,7 @@ export async function GET(): Promise<Response> {
         id: coastlineSegments.id,
         ledgeId: coastlineSegments.ledgeId,
         path: coastlineSegments.path,
+        bearings: coastlineSegments.bearings,
       })
       .from(coastlineSegments);
 

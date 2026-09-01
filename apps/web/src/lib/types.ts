@@ -66,6 +66,8 @@ export interface CoastlineSegment {
   ledgeId: string;
   /** [[lat, lon], ...] in coastline order. */
   path: [number, number][];
+  /** Per-vertex seaward bearing, parallel to `path`. Null on rows built before this existed. */
+  bearings: number[] | null;
 }
 
 export interface LedgesResponse {

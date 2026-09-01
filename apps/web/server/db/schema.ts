@@ -179,6 +179,15 @@ export const coastlineSegments = pgTable(
       .references(() => ledges.id, { onDelete: "cascade" }),
     /** [[lat, lon], ...] in coastline order. */
     path: jsonb("path").$type<[number, number][]>().notNull(),
+    /**
+     * Per-vertex seaward bearing, parallel to `path`. The shore curves, so a
+     * run can't be described by one facing direction — this is what lets the
+     * map score each bit of shore by its own aspect (a west-facing stretch
+     * fires on a different tide than an east-facing one). Nullable so a row
+     * predating this column still renders, falling back to its ledge's
+     * facing_bearing.
+     */
+    bearings: jsonb("bearings").$type<number[]>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

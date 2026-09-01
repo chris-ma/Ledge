@@ -1,0 +1,1 @@
+ALTER TABLE "coastline_segments" ADD COLUMN "bearings" jsonb;

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
+import { DangerFlags } from "@/components/map/DangerFlags";
 import { HourSlider } from "@/components/map/HourSlider";
 import { LedgeMarkers } from "@/components/map/LedgeMarkers";
 import { MapLegend } from "@/components/map/MapLegend";
@@ -69,14 +70,18 @@ export function MapPage() {
                 maxZoom={19}
                 maxNativeZoom={16}
               />
-              {coastlineQuery.data && (
+              {coastlineQuery.data && ledgesQuery.data && (
                 <PressureHeatmap
                   coastline={coastlineQuery.data}
+                  ledges={ledgesQuery.data}
                   conditionsByLedgeId={conditionsByLedgeId}
                 />
               )}
               {ledgesQuery.data && (
-                <LedgeMarkers ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
+                <>
+                  <LedgeMarkers ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
+                  <DangerFlags ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
+                </>
               )}
             </MapContainer>
 

@@ -2,14 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   assignCoastlineToLedges,
   buildOverpassQuery,
+  computeVertexBearings,
   filterShorelineWays,
   parseOverpassCoastline,
   snapLedgesToCoastline,
   type LedgeAnchor,
 } from "./coastline.js";
 
-const NORTH_HEAD: LedgeAnchor = { id: "north-head", lat: -33.815, lon: 151.301 };
-const FAIRY_BOWER: LedgeAnchor = { id: "fairy-bower", lat: -33.8008, lon: 151.2944 };
+const NORTH_HEAD: LedgeAnchor = { id: "north-head", lat: -33.815, lon: 151.301, facingBearing: 75 };
+const FAIRY_BOWER: LedgeAnchor = { id: "fairy-bower", lat: -33.8008, lon: 151.2944, facingBearing: 23 };
 
 describe("buildOverpassQuery", () => {
   it("emits a coastline around-clause per ledge at the given radius", () => {
@@ -129,7 +130,75 @@ describe("filterShorelineWays", () => {
   });
 });
 
+describe("computeVertexBearings", () => {
+  it("faces east off a north-south shore when the ledge faces east", () => {
+    // Shore running due north; seaward is east (90).
+    const path: [number, number][] = [
+      [-33.8200, 151.3000],
+      [-33.8190, 151.3000],
+      [-33.8180, 151.3000],
+    ];
+    for (const b of computeVertexBearings(path, 90)) {
+      expect(b).toBeCloseTo(90, 0);
+    }
+  });
+
+  it("faces west off the same shore when the ledge faces west", () => {
+    const path: [number, number][] = [
+      [-33.8200, 151.3000],
+      [-33.8190, 151.3000],
+      [-33.8180, 151.3000],
+    ];
+    for (const b of computeVertexBearings(path, 270)) {
+      expect(b).toBeCloseTo(270, 0);
+    }
+  });
+
+  it("turns with the shore around a corner", () => {
+    // North up the coast, then east: aspect should swing from east to south.
+    const path: [number, number][] = [
+      [-33.8200, 151.3000],
+      [-33.8190, 151.3000],
+      [-33.8190, 151.3020],
+      [-33.8190, 151.3040],
+    ];
+    const bearings = computeVertexBearings(path, 90);
+    expect(bearings[0]).toBeCloseTo(90, 0);
+    expect(bearings[bearings.length - 1]).toBeCloseTo(180, 0);
+  });
+
+  it("returns one bearing per vertex", () => {
+    const path: [number, number][] = [
+      [-33.8200, 151.3000],
+      [-33.8190, 151.3000],
+      [-33.8180, 151.3000],
+      [-33.8170, 151.3000],
+    ];
+    expect(computeVertexBearings(path, 90)).toHaveLength(4);
+  });
+
+  it("handles a two-vertex run", () => {
+    const path: [number, number][] = [
+      [-33.8200, 151.3000],
+      [-33.8190, 151.3000],
+    ];
+    const bearings = computeVertexBearings(path, 90);
+    expect(bearings).toHaveLength(2);
+    expect(bearings[0]).toBeCloseTo(90, 0);
+  });
+});
+
 describe("assignCoastlineToLedges", () => {
+  it("attaches a bearing to every vertex of every run", () => {
+    const way: [number, number][] = [
+      [-33.8150, 151.3015],
+      [-33.8151, 151.3016],
+      [-33.8152, 151.3017],
+    ];
+    const runs = assignCoastlineToLedges([way], [NORTH_HEAD], 2.5, 0);
+    expect(runs[0].bearings).toHaveLength(runs[0].path.length);
+  });
+
   it("gives a run to the nearest ledge", () => {
     const way: [number, number][] = [
       [-33.8150, 151.3015],
