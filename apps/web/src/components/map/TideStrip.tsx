@@ -51,12 +51,24 @@ export function formatTideReading(tideSeries: TidePoint[], index: number): strin
 /**
  * A translucent tide-height sparkline, absolutely positioned to fill its
  * parent — meant to sit visually BEHIND HourSlider's range input as a
- * backdrop, not as its own separate section. Shares the exact 0-100% x-axis
- * as the slider (same `hours`/`tideSeries` index), so the slider thumb
- * scrubbing across it lines up with wherever "now" sits in the tide cycle.
+ * backdrop, not as its own separate section. Shares the slider's exact
+ * 0-100% x-axis, so the thumb scrubbing across it lines up with wherever
+ * "now" sits in the tide cycle.
+ *
+ * `from`/`to` clip it to the hours the slider is currently showing: the
+ * slider spans three days out of a ten-day series, so drawing the whole
+ * series here would put the curve badly out of step with the thumb.
  */
-export function TideBackdrop({ tideSeries }: { tideSeries: TidePoint[] }) {
-  const paths = buildPaths(tideSeries);
+export function TideBackdrop({
+  tideSeries,
+  from = 0,
+  to = tideSeries.length - 1,
+}: {
+  tideSeries: TidePoint[];
+  from?: number;
+  to?: number;
+}) {
+  const paths = buildPaths(tideSeries.slice(from, to + 1));
   if (!paths) return null;
 
   return (
