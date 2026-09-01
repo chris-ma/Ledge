@@ -11,32 +11,27 @@ const PANE_NAME = "pressureHeat";
 const PANE_Z_INDEX = "350";
 
 /**
- * Glow radius is derived from zoom rather than fixed. Vertices sit ~30m
- * apart, which is a quarter of a pixel zoomed out to the whole city and ~15
- * zoomed in on one headland — a single radius that blooms nicely up close
- * turns the coast into a chain of blobs from far away, losing the shape
- * entirely. Scaling with the on-screen vertex spacing keeps it a thin bright
- * thread when zoomed out and a soft wide band when zoomed in.
+ * Glow radius is a generous, roughly screen-constant size — the same choice
+ * heatmap.js/leaflet.heat make — rather than shrinking with the real-world
+ * spacing between vertices. A radius tied to vertex spacing reads as a
+ * precise but thin outline of the coast at any zoom; what actually looks
+ * like a heat map is big, soft, overlapping blobs that bloom well past each
+ * point, blending into broad hot regions the way the reference does. It
+ * still grows a little with zoom so a close-in headland isn't swallowed by
+ * one giant blob, but the min/max keep it fat at every zoom level rather
+ * than tapering to a thread when the view pulls back to the whole city.
  */
-const GLOW_RADIUS_PER_SPACING = 3;
-const GLOW_RADIUS_MIN_PX = 4;
-const GLOW_RADIUS_MAX_PX = 22;
-/** Metres between stored coastline vertices — see MIN_VERTEX_SPACING_M in server/coastline.ts. */
-const VERTEX_SPACING_M = 30;
+const GLOW_RADIUS_AT_REFERENCE_ZOOM_PX = 34;
+const GLOW_RADIUS_REFERENCE_ZOOM = 13;
+const GLOW_RADIUS_MIN_PX = 16;
+const GLOW_RADIUS_MAX_PX = 60;
 
-/** Metres per screen pixel in Web Mercator at a given latitude and zoom. */
-function metersPerPixel(lat: number, zoom: number): number {
-  return (156543.03392 * Math.cos((lat * Math.PI) / 180)) / 2 ** zoom;
+function glowRadiusPx(zoom: number): number {
+  const scaled = GLOW_RADIUS_AT_REFERENCE_ZOOM_PX * 2 ** (zoom - GLOW_RADIUS_REFERENCE_ZOOM);
+  return Math.round(Math.min(GLOW_RADIUS_MAX_PX, Math.max(GLOW_RADIUS_MIN_PX, scaled)));
 }
-
-function glowRadiusPx(lat: number, zoom: number): number {
-  const spacingPx = VERTEX_SPACING_M / metersPerPixel(lat, zoom);
-  return Math.round(
-    Math.min(GLOW_RADIUS_MAX_PX, Math.max(GLOW_RADIUS_MIN_PX, spacingPx * GLOW_RADIUS_PER_SPACING)),
-  );
-}
-/** Peak alpha at a glow's centre. Kept well under 1 so overlapping glows blend instead of stacking to a hard edge. */
-const GLOW_ALPHA = 0.5;
+/** Peak alpha at a glow's centre. Kept under 1 so overlapping glows blend and stack into a hot core instead of clipping to a hard edge immediately. */
+const GLOW_ALPHA = 0.42;
 /** Score buckets to pre-render glow sprites for — 5-point steps are finer than the eye reads off a colour ramp. */
 const SCORE_BUCKET = 5;
 /** Extra viewport margin drawn beyond the visible map, as a fraction of its size, so a pan doesn't expose a bare edge before the redraw. */
@@ -169,7 +164,7 @@ export function PressureHeatmap({ coastline, ledges, conditionsByLedgeId }: Pres
       // during a pan and only needs redrawing once the gesture settles.
       const origin = map.containerPointToLayerPoint(pad.multiplyBy(-1)).round();
       const dpr = window.devicePixelRatio || 1;
-      const radius = glowRadiusPx(map.getCenter().lat, map.getZoom());
+      const radius = glowRadiusPx(map.getZoom());
 
       canvas.width = padded.x * dpr;
       canvas.height = padded.y * dpr;
