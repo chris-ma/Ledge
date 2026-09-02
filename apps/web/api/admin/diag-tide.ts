@@ -27,16 +27,9 @@ const CANDIDATES: { label: string; lat: number; lon: number }[] = [
   { label: "Balmoral Point exact", lat: -33.8252, lon: 151.2465 },
 ];
 
-export async function GET(request: Request): Promise<Response> {
-  const expected = process.env.CRON_SECRET;
-  if (!expected) {
-    return Response.json({ error: "Server misconfigured: CRON_SECRET not set" }, { status: 500 });
-  }
-  const url = new URL(request.url);
-  if (url.searchParams.get("cron_secret") !== expected) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+// No secret gate: this is read-only (only calls the public ODB tide API,
+// no DB access, no writes) and is deleted right after use.
+export async function GET(): Promise<Response> {
   const now = new Date();
   const start = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const end = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
