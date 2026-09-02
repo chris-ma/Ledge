@@ -296,6 +296,87 @@ const SEED_LEDGES: NewLedge[] = [
     notes:
       "Sheltered harbour ledge, estimated location/height, not surveyed. Fishing pressure is tide-only — ocean swell doesn't reach this spot.",
   },
+  // Anchor points added to close real coastline gaps the coastline builder
+  // couldn't reach from any existing ledge, even at its widened 5km radius
+  // (see COASTLINE_FETCH_RADIUS_M in server/coastline.ts): the northern
+  // beaches between Barrenjoey Head and Long Reef Point, the harbour's south
+  // shore between the Bridge/city and Vaucluse, and Middle Harbour/Balgowlah,
+  // which no existing ledge's own coordinate sits anywhere near.
+  {
+    name: "Bungan Head",
+    area: "Newport / Mona Vale",
+    lat: -33.664,
+    lon: 151.325,
+    facingBearing: 95,
+    platformHeightM: 4.0,
+    slopeEstimate: 0.1,
+    safetyMargin: 0.7,
+    isDeclaredHazard: false,
+    heightVerified: false,
+    sheltered: false,
+    notes:
+      "Estimated location/height, not surveyed. Closes the northern-beaches gap between Barrenjoey Head and Turimetta Head.",
+  },
+  {
+    name: "Turimetta Head",
+    area: "Warriewood / Narrabeen",
+    lat: -33.703,
+    lon: 151.301,
+    facingBearing: 95,
+    platformHeightM: 4.0,
+    slopeEstimate: 0.1,
+    safetyMargin: 0.7,
+    isDeclaredHazard: false,
+    heightVerified: false,
+    sheltered: false,
+    notes:
+      "Estimated location/height, not surveyed. Closes the northern-beaches gap between Bungan Head and Long Reef Point.",
+  },
+  {
+    name: "Point Piper",
+    area: "Point Piper",
+    lat: -33.8698,
+    lon: 151.2483,
+    facingBearing: 20,
+    platformHeightM: 1.5,
+    slopeEstimate: 0.1,
+    safetyMargin: 0.7,
+    isDeclaredHazard: false,
+    heightVerified: false,
+    sheltered: true,
+    notes:
+      "Sheltered harbour ledge, estimated location/height, not surveyed. Fishing pressure is tide-only — ocean swell doesn't reach this spot. Closes the south-shore gap between the Harbour Bridge/city and Vaucluse.",
+  },
+  {
+    name: "Grotto Point",
+    area: "Clontarf / Middle Harbour",
+    lat: -33.8027,
+    lon: 151.2531,
+    facingBearing: 180,
+    platformHeightM: 2.0,
+    slopeEstimate: 0.1,
+    safetyMargin: 0.7,
+    isDeclaredHazard: false,
+    heightVerified: false,
+    sheltered: true,
+    notes:
+      "Sheltered harbour ledge, estimated location/height, not surveyed. Fishing pressure is tide-only — ocean swell doesn't reach this spot. Anchors the Middle Harbour entrance.",
+  },
+  {
+    name: "Balgowlah Heights",
+    area: "North Harbour / Manly Cove",
+    lat: -33.797,
+    lon: 151.262,
+    facingBearing: 230,
+    platformHeightM: 1.5,
+    slopeEstimate: 0.1,
+    safetyMargin: 0.7,
+    isDeclaredHazard: false,
+    heightVerified: false,
+    sheltered: true,
+    notes:
+      "Sheltered harbour ledge, estimated location/height, not surveyed. Fishing pressure is tide-only — ocean swell doesn't reach this spot.",
+  },
 ];
 
 /** Upserts every seed ledge. Exported so both the CLI entrypoint below and a one-off admin endpoint can reuse it without duplicating the upsert logic. */
