@@ -32,13 +32,28 @@ function glowRadiusPx(zoom: number): number {
 }
 /**
  * Peak alpha at a glow's centre scales with the score, so a hot spot still
- * reads as the most visible thing on the map. Drastically cut back down to
- * ~20% on request — the map underneath (streets, place names, the
- * coastline shape itself) needs to stay legible through the overlay, not
- * be buried by it.
+ * reads as the most visible thing on the map — but this is the *internal*
+ * blend strength, not how visible the whole overlay is against the base
+ * map. Those used to be the same number, which was the actual bug behind
+ * several rounds of "still too opaque" even after cutting this down hard:
+ * every vertex's glow overlaps 10-20+ neighbours (30m real spacing, a
+ * 16-60px screen radius), and normal canvas compositing *stacks* alpha on
+ * every overlap — 1-(1-a)^n for n overlapping layers — so a dense stretch
+ * of coast reads far more solid than this constant alone suggests,
+ * regardless of how low it's set. Kept well-saturated here for a legible
+ * colour gradient; OVERALL_OPACITY below is the actual, non-compounding
+ * knob for how much of the map shows through.
  */
-const GLOW_ALPHA_MIN = 0.15;
-const GLOW_ALPHA_MAX = 0.25;
+const GLOW_ALPHA_MIN = 0.55;
+const GLOW_ALPHA_MAX = 0.85;
+
+/**
+ * Flat opacity applied once to the whole rendered heat layer (see the
+ * offscreen-buffer compositing in redraw() below), not per-sprite — this is
+ * what actually controls how much of the base map shows through, without
+ * the stacking behaviour described above. Drastically cut on request.
+ */
+const OVERALL_OPACITY = 0.05;
 
 function glowPeakAlpha(score: number): number {
   const t = Math.min(100, Math.max(0, score)) / 100;
@@ -152,6 +167,12 @@ export function PressureHeatmap({ coastline, ledges, conditionsByLedgeId }: Pres
     const canvas = L.DomUtil.create("canvas", "leaflet-layer leaflet-zoom-hide") as HTMLCanvasElement;
     pane.appendChild(canvas);
     canvasRef.current = canvas;
+    // All sprites are composited here first, at full internal strength —
+    // then the whole buffer is stamped onto the visible canvas once at
+    // OVERALL_OPACITY. That single composite is what keeps the final
+    // opacity flat and predictable regardless of how many glows overlap
+    // in a given area (see the comment on GLOW_ALPHA_MIN/MAX above).
+    const buffer = document.createElement("canvas");
 
     const sprites = new Map<number, HTMLCanvasElement>();
     let spriteRadius = -1;
@@ -184,11 +205,14 @@ export function PressureHeatmap({ coastline, ledges, conditionsByLedgeId }: Pres
       canvas.style.width = `${padded.x}px`;
       canvas.style.height = `${padded.y}px`;
       L.DomUtil.setPosition(canvas, origin);
+      buffer.width = canvas.width;
+      buffer.height = canvas.height;
 
+      const bufCtx = buffer.getContext("2d");
       const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, padded.x, padded.y);
+      if (!bufCtx || !ctx) return;
+      bufCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      bufCtx.clearRect(0, 0, padded.x, padded.y);
 
       for (const point of points) {
         const p = map.latLngToLayerPoint([point.lat, point.lon]).subtract(origin);
@@ -201,8 +225,14 @@ export function PressureHeatmap({ coastline, ledges, conditionsByLedgeId }: Pres
         ) {
           continue;
         }
-        ctx.drawImage(spriteFor(point.score, radius), p.x - radius, p.y - radius);
+        bufCtx.drawImage(spriteFor(point.score, radius), p.x - radius, p.y - radius);
       }
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = OVERALL_OPACITY;
+      ctx.drawImage(buffer, 0, 0);
+      ctx.globalAlpha = 1;
     };
 
     redraw();
