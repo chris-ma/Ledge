@@ -25,6 +25,22 @@ const ONE_HOUR_MS = 60 * 60 * 1000;
 // back to the offset if that fails — never force the nudge unconditionally.
 const TIDE_QUERY_OFFSET_KM = 8;
 
+// A fixed point just outside Sydney Harbour's entrance (South Head side),
+// confirmed live to reliably resolve ODB's tide grid. For a ledge deep
+// inside the harbour (Kirribilli, Cremorne, Bradleys Head, Chowder Bay,
+// Balmoral Point), an 8km nudge along the ledge's OWN facing_bearing
+// crosses the harbour to the opposite shore rather than reaching open
+// water — confirmed live for two of these, both still land-masked. Sydney
+// Harbour's tide is essentially one shared tidal wave propagating up from
+// the Heads with only minor lag/amplitude change over these distances, so
+// this fixed point is a reasonable stand-in tide source for any sheltered
+// ledge whose own two attempts both fail, rather than leaving it with no
+// tide data at all. Only tried for sheltered ledges — an exposed
+// ocean-facing ledge whose own coordinate and local offshore nudge both
+// fail has a different problem, and redirecting it to a harbour-interior
+// point wouldn't be physically meaningful for it.
+const HARBOUR_ENTRANCE_FALLBACK = { lat: -33.8398, lon: 151.28 };
+
 interface TideFetchResult {
   hours: TideHour[];
   usedLat: number;
@@ -33,10 +49,11 @@ interface TideFetchResult {
 
 /**
  * Tries the ledge's exact coordinate first, falls back to a point nudged
- * `TIDE_QUERY_OFFSET_KM` out to sea if that fails — see the constant's
- * comment for why neither alone covers every ledge. Reports back which
- * coordinate actually succeeded so the caller can persist it as the ledge's
- * "weather station" point.
+ * `TIDE_QUERY_OFFSET_KM` out to sea if that fails, then — for a sheltered
+ * ledge only — the fixed harbour-entrance point above. See each constant's
+ * comment for why neither of the first two alone covers every ledge.
+ * Reports back which coordinate actually succeeded so the caller can
+ * persist it as the ledge's "weather station" point.
  */
 async function fetchTideWithFallback(
   ledge: Ledge,
@@ -52,12 +69,31 @@ async function fetchTideWithFallback(
       const hours = await fetchTide(offshore.lat, offshore.lon, startDate, endDate);
       return { hours, usedLat: offshore.lat, usedLon: offshore.lon };
     } catch (offshoreErr) {
-      console.error(
-        `Tide fetch failed for "${ledge.name}" at both its exact coordinate and the offshore fallback:`,
-        exactErr,
-        offshoreErr,
-      );
-      throw offshoreErr;
+      if (!ledge.sheltered) {
+        console.error(
+          `Tide fetch failed for "${ledge.name}" at both its exact coordinate and the offshore fallback:`,
+          exactErr,
+          offshoreErr,
+        );
+        throw offshoreErr;
+      }
+      try {
+        const hours = await fetchTide(
+          HARBOUR_ENTRANCE_FALLBACK.lat,
+          HARBOUR_ENTRANCE_FALLBACK.lon,
+          startDate,
+          endDate,
+        );
+        return { hours, usedLat: HARBOUR_ENTRANCE_FALLBACK.lat, usedLon: HARBOUR_ENTRANCE_FALLBACK.lon };
+      } catch (harbourErr) {
+        console.error(
+          `Tide fetch failed for sheltered ledge "${ledge.name}" at its exact coordinate, the offshore fallback, and the harbour-entrance fallback:`,
+          exactErr,
+          offshoreErr,
+          harbourErr,
+        );
+        throw harbourErr;
+      }
     }
   }
 }

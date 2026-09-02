@@ -118,7 +118,19 @@ export async function fetchTide(
         );
       }
       const body: unknown = await response.json();
-      return parseOdbTideResponse(body);
+      const hours = parseOdbTideResponse(body);
+      // Confirmed live: a land-masked grid cell doesn't error at all — it
+      // returns a normal HTTP 200 with a validly-shaped but empty time
+      // series (e.g. {time:[],z:[],u:[],v:[]}), which parses cleanly into a
+      // zero-length array rather than throwing. Left alone, callers like
+      // fetchTideWithFallback in computeAndUpsert.ts see this as a
+      // successful fetch and never try their offshore fallback — throwing
+      // here instead routes it through the same retry/fallback path as any
+      // other failure.
+      if (hours.length === 0) {
+        throw new Error(`ODB Open Tide API returned zero hours for (${lat}, ${lon}) — likely a land-masked grid cell`);
+      }
+      return hours;
     } catch (err) {
       lastError = err;
     }
