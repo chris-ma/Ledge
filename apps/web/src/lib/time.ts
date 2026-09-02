@@ -130,26 +130,15 @@ export function nowHourIso(): string {
   return now.toISOString();
 }
 
-/**
- * Default `{ fromIso, toIso }` fetch window: now (top of hour) through `days`
- * days later. `hoursBack` optionally extends `fromIso` into the past (e.g.
- * for the ledge detail page's now-centered timeline, which needs some
- * already-elapsed hours to show alongside the forecast) — 0 preserves the
- * original "starts exactly now" behavior for existing callers.
- */
-export function getDefaultWindowIso(
-  days: number = DEFAULT_WINDOW_DAYS,
-  hoursBack: number = 0,
-): {
+/** Default `{ fromIso, toIso }` fetch window: now (top of hour) through `days` days later. */
+export function getDefaultWindowIso(days: number = DEFAULT_WINDOW_DAYS): {
   fromIso: string;
   toIso: string;
 } {
   const nowHour = nowHourIso();
-  const from = new Date(nowHour);
-  from.setUTCHours(from.getUTCHours() - hoursBack);
   const to = new Date(nowHour);
   to.setUTCDate(to.getUTCDate() + days);
-  return { fromIso: from.toISOString(), toIso: to.toISOString() };
+  return { fromIso: nowHour, toIso: to.toISOString() };
 }
 
 /**

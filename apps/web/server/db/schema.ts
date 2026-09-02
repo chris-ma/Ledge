@@ -52,7 +52,7 @@ export const ledges = pgTable(
     safetyMargin: doublePrecision("safety_margin").notNull().default(0.7),
     isDeclaredHazard: boolean("is_declared_hazard").notNull().default(false),
     // Estimated from general geography, not surveyed on-site. The frontend
-    // must visibly flag any ledge where this is false — see UnverifiedBadge.
+    // must visibly flag any ledge where this is false — see LedgeMarkers's tooltip.
     heightVerified: boolean("height_verified").notNull().default(false),
     // True for a ledge inside a sheltered harbour, where ocean swell doesn't
     // reach — Fishing Pressure for these ledges is computed from tide alone
