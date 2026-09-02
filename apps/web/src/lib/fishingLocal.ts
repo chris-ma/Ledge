@@ -46,13 +46,17 @@ export function directionalClamp(angleDiffDegrees: number): number {
 }
 
 /**
- * Fishing Condition (0-100) for one hour at one facing bearing, or null when
- * the hour has no usable reading — never a fabricated zero, matching the
- * backend's policy.
+ * Fishing Condition (0-100) for one hour at one facing bearing, or null only
+ * when NEITHER signal is usable this hour — never a fabricated zero, and
+ * never discarding a real reading on one side just because the other side's
+ * upstream fetch failed for this hour (some coordinates get an empty tide
+ * response from ODB/TPXO even with the offshore-fallback nudge).
  *
  * Sheltered harbour ledges score on tide alone: ocean swell doesn't reach
  * inside the harbour, so folding in a near-zero swell term would only dilute
- * the signal.
+ * the signal — these need the tide reading specifically, with no fallback.
+ * An exposed ledge falls back to whichever of tide/swell it actually has
+ * this hour, blending the two only when both are present.
  */
 export function localFishingCondition(
   condition: LedgeCondition,
@@ -61,23 +65,39 @@ export function localFishingCondition(
 ): number | null {
   const { tideCurrentSpeedMs, tideCurrentDirDeg, hsM, tpS, swellDirDeg } = condition;
 
-  if (tideCurrentSpeedMs === null || tideCurrentDirDeg === null) return null;
+  const hasTide = tideCurrentSpeedMs !== null && tideCurrentDirDeg !== null;
+  const hasSwell = hsM !== null && tpS !== null && swellDirDeg !== null;
+
+  if (sheltered && !hasTide) return null;
+  if (!sheltered && !hasTide && !hasSwell) return null;
 
   // Tide current is stored as the bearing it flows FROM, so a current
   // running straight onto this bit of shore lines up with its facing
   // bearing and scores highest — an ebb running off it scores low.
-  const tidePressure =
-    tideCurrentSpeedMs * directionalClamp(angleDiffDeg(tideCurrentDirDeg, facingBearingDeg));
-  const tideNorm = clamp(tidePressure / TIDE_CURRENT_PRESSURE_REF_MAX_MS, 0, 1);
+  const tideNorm = hasTide
+    ? clamp(
+        (tideCurrentSpeedMs! * directionalClamp(angleDiffDeg(tideCurrentDirDeg!, facingBearingDeg))) /
+          TIDE_CURRENT_PRESSURE_REF_MAX_MS,
+        0,
+        1,
+      )
+    : null;
 
-  if (sheltered) return Math.round(tideNorm * 100);
-
-  if (hsM === null || tpS === null || swellDirDeg === null) return null;
+  if (sheltered) return Math.round(tideNorm! * 100);
 
   // Swell hitting square on counts fully; swell running past the aspect
   // counts for progressively less, and nothing from behind it.
-  const waveLoad = hsM ** 2 * tpS * directionalClamp(angleDiffDeg(swellDirDeg, facingBearingDeg));
-  const swellNorm = clamp(waveLoad / FISHING_WAVE_LOAD_REF_MAX, 0, 1);
+  const swellNorm = hasSwell
+    ? clamp(
+        (hsM! ** 2 * tpS! * directionalClamp(angleDiffDeg(swellDirDeg!, facingBearingDeg))) /
+          FISHING_WAVE_LOAD_REF_MAX,
+        0,
+        1,
+      )
+    : null;
+
+  if (tideNorm === null) return Math.round(swellNorm! * 100);
+  if (swellNorm === null) return Math.round(tideNorm * 100);
 
   return Math.round(clamp(SWELL_WEIGHT * swellNorm + TIDE_WEIGHT * tideNorm, 0, 1) * 100);
 }

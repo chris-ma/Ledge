@@ -8,12 +8,14 @@ import {
 import {
   computeFishingPressureForHour,
   computeFishingPressureIndex,
+  computeFishingPressureIndexSwellOnly,
   computeFishingPressureIndexTideOnly,
   computeTideCurrentDirFromDeg,
   computeTideCurrentSpeedMs,
   computeTidePressure,
   fishingPressureToTier,
 } from "./fishingPressure.js";
+import { computeWaveLoad } from "./lli.js";
 
 describe("computeTideCurrentSpeedMs", () => {
   it("converts a u/v cm/s vector magnitude to m/s", () => {
@@ -123,12 +125,50 @@ describe("computeFishingPressureForHour", () => {
     expect(result?.fishingTier).toBe(fishingPressureToTier(result!.fishingPressure));
   });
 
-  it.each(["hsM", "tpS", "swellDirDeg", "tideCurrentUCmS", "tideCurrentVCmS"] as const)(
-    "returns null when %s is missing",
+  it.each(["hsM", "tpS", "swellDirDeg"] as const)(
+    "falls back to a tide-only result when only %s is missing (swell incomplete, tide present)",
     (key) => {
-      expect(computeFishingPressureForHour({ ...baseInputs, [key]: null })).toBeNull();
+      const result = computeFishingPressureForHour({ ...baseInputs, [key]: null });
+      expect(result).not.toBeNull();
+      expect(result?.fishingPressure).toBe(
+        computeFishingPressureIndexTideOnly(
+          computeTidePressure(
+            computeTideCurrentSpeedMs(baseInputs.tideCurrentUCmS, baseInputs.tideCurrentVCmS),
+            computeTideCurrentDirFromDeg(baseInputs.tideCurrentUCmS, baseInputs.tideCurrentVCmS),
+            baseInputs.facingBearingDeg,
+          ),
+        ),
+      );
     },
   );
+
+  it.each(["tideCurrentUCmS", "tideCurrentVCmS"] as const)(
+    "falls back to a swell-only result when only %s is missing (tide incomplete, swell present)",
+    (key) => {
+      const result = computeFishingPressureForHour({ ...baseInputs, [key]: null });
+      expect(result).not.toBeNull();
+      expect(result?.tideCurrentSpeedMs).toBeNull();
+      expect(result?.tideCurrentDirDeg).toBeNull();
+      expect(result?.fishingPressure).toBe(
+        computeFishingPressureIndexSwellOnly(
+          computeWaveLoad(baseInputs.hsM, baseInputs.tpS, baseInputs.swellDirDeg, baseInputs.facingBearingDeg),
+        ),
+      );
+    },
+  );
+
+  it("returns null only when both tide and swell are entirely missing", () => {
+    expect(
+      computeFishingPressureForHour({
+        ...baseInputs,
+        hsM: null,
+        tpS: null,
+        swellDirDeg: null,
+        tideCurrentUCmS: null,
+        tideCurrentVCmS: null,
+      }),
+    ).toBeNull();
+  });
 
   describe("sheltered ledges", () => {
     const shelteredInputs = { ...baseInputs, sheltered: true };

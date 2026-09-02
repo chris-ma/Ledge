@@ -35,10 +35,12 @@ function glowRadiusPx(zoom: number): number {
  * spot still reads as the most solid thing on the map. But both ends sit
  * high: cool/calm readings need to stay clearly visible and solidly
  * coloured too, not fade toward invisible — a blank stretch of coast reads
- * as missing data, not as "nothing happening right now".
+ * as missing data, not as "nothing happening right now". Raised further on
+ * request to read as solidly opaque at every zoom level, not just the one
+ * it happened to be checked at.
  */
-const GLOW_ALPHA_MIN = 0.65;
-const GLOW_ALPHA_MAX = 0.88;
+const GLOW_ALPHA_MIN = 0.8;
+const GLOW_ALPHA_MAX = 0.97;
 
 function glowPeakAlpha(score: number): number {
   const t = Math.min(100, Math.max(0, score)) / 100;

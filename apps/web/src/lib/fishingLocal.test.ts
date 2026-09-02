@@ -78,8 +78,26 @@ describe("localFishingCondition", () => {
     expect(localFishingCondition(c, 90, true)).toBeNull();
   });
 
-  it("returns null for an exposed ledge with no swell reading", () => {
-    const c = condition({ hsM: null });
+  it("falls back to a tide-only score for an exposed ledge with no swell reading", () => {
+    // Tide from the west (270) onto a west-facing stretch, swell missing.
+    const c = condition({ hsM: null, tpS: null, swellDirDeg: null, tideCurrentDirDeg: 270 });
+    expect(localFishingCondition(c, 270, false)).toBe(100);
+  });
+
+  it("falls back to a swell-only score for an exposed ledge with no tide reading", () => {
+    // Swell from the east (90) onto an east-facing stretch, tide missing.
+    const c = condition({ tideCurrentSpeedMs: null, tideCurrentDirDeg: null, swellDirDeg: 90 });
+    expect(localFishingCondition(c, 90, false)).toBeGreaterThan(0);
+  });
+
+  it("returns null for an exposed ledge with neither tide nor swell", () => {
+    const c = condition({
+      hsM: null,
+      tpS: null,
+      swellDirDeg: null,
+      tideCurrentSpeedMs: null,
+      tideCurrentDirDeg: null,
+    });
     expect(localFishingCondition(c, 90, false)).toBeNull();
   });
 
