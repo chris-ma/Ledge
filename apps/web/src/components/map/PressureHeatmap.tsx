@@ -51,9 +51,10 @@ const GLOW_ALPHA_MAX = 0.85;
  * Flat opacity applied once to the whole rendered heat layer (see the
  * offscreen-buffer compositing in redraw() below), not per-sprite — this is
  * what actually controls how much of the base map shows through, without
- * the stacking behaviour described above. Drastically cut on request.
+ * the stacking behaviour described above. 5% read as a touch too faint;
+ * nudged up to 10%.
  */
-const OVERALL_OPACITY = 0.05;
+const OVERALL_OPACITY = 0.1;
 
 function glowPeakAlpha(score: number): number {
   const t = Math.min(100, Math.max(0, score)) / 100;
