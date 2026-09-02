@@ -2,15 +2,19 @@ import { db } from "../../server/db/client.js";
 import { computeAndUpsertForLedge } from "../../server/computeAndUpsert.js";
 import { ledges, type Ledge } from "../../server/db/schema.js";
 
-// Fetching+computing 12 ledges against two external APIs can comfortably
+// Fetching+computing every ledge against two external APIs can comfortably
 // exceed Vercel's default function timeout; this is well within what's
-// configurable on the Hobby plan.
-export const maxDuration = 60;
+// configurable on the Hobby plan. Was 60 — fine at 20 ledges, but 25 (after
+// the 5 new anchor ledges) started running right up against it and getting
+// cut off mid-batch, leaving the last few ledges' weatherStationLat/Lon
+// unset for that run. Given real headroom instead of tuning it right to the
+// edge again every time the ledge count grows.
+export const maxDuration = 180;
 
 // Kept low: the free ODB tide API has shown signs of shedding load (an
 // HTTP 200 with an empty body) under higher concurrency — see the retry
-// in server/sources/odbTide.ts. 12 ledges at this concurrency comfortably
-// fits inside maxDuration even with retries.
+// in server/sources/odbTide.ts. Comfortably fits inside maxDuration even
+// with retries at this concurrency, for the current 25 ledges.
 const CONCURRENCY = 2;
 
 interface LedgeRunResult {
