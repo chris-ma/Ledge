@@ -2,20 +2,23 @@ import { db } from "../../server/db/client.js";
 import { computeAndUpsertForLedge } from "../../server/computeAndUpsert.js";
 import { ledges, type Ledge } from "../../server/db/schema.js";
 
-// Fetching+computing every ledge against two external APIs can comfortably
-// exceed Vercel's default function timeout; this is well within what's
-// configurable on the Hobby plan. Was 60 — fine at 20 ledges, but 25 (after
-// the 5 new anchor ledges) started running right up against it and getting
-// cut off mid-batch, leaving the last few ledges' weatherStationLat/Lon
-// unset for that run. Given real headroom instead of tuning it right to the
-// edge again every time the ledge count grows.
-export const maxDuration = 180;
+// 60 is the actual hard ceiling on the Hobby plan (confirmed live: raising
+// this export to 180 had no effect — the function still got killed at 60s
+// on the wall clock, per Vercel's runtime logs). Anything beyond 60 here is
+// dead configuration on this plan, so don't raise it again without first
+// confirming the project has moved to Pro; the real lever for handling more
+// ledges is CONCURRENCY below, not this number.
+export const maxDuration = 60;
 
-// Kept low: the free ODB tide API has shown signs of shedding load (an
-// HTTP 200 with an empty body) under higher concurrency — see the retry
-// in server/sources/odbTide.ts. Comfortably fits inside maxDuration even
-// with retries at this concurrency, for the current 25 ledges.
-const CONCURRENCY = 2;
+// Raised from 2 now that 25 ledges (2 * 13 = 13 sequential batches) was
+// running past the 60s ceiling and getting cut off mid-run — confirmed live:
+// several ledges never got their weatherStationLat/Lon set because the
+// function was killed before reaching them. 5 keeps it to 5 sequential
+// batches with real margin, while still well short of firing all 25 ledges'
+// worth of ODB tide requests at once, which is what the free ODB API has
+// shown signs of shedding load under (an HTTP 200 with an empty body) — see
+// the retry in server/sources/odbTide.ts.
+const CONCURRENCY = 5;
 
 interface LedgeRunResult {
   ledgeName: string;
