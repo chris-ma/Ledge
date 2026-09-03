@@ -1,5 +1,6 @@
 import type { SwellCurrentHour } from "./sources/openMeteo.js";
 import type { TideHour } from "./sources/odbTide.js";
+import type { WindHour } from "./sources/openMeteoWind.js";
 
 export interface MergedHour {
   /** Normalized: ISO 8601, UTC, top of hour, zero seconds/ms. */
@@ -15,6 +16,8 @@ export interface MergedHour {
    * Fishing Pressure Index's directional tide term — see server/model/fishingPressure.ts. */
   tideCurrentUCmS: number | null;
   tideCurrentVCmS: number | null;
+  windSpeedMs: number | null;
+  windDirDeg: number | null;
 }
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -46,15 +49,21 @@ export function normalizeHourKey(ts: string): string {
 export function mergeHourlySeries(
   swellCurrent: SwellCurrentHour[],
   tide: TideHour[],
+  wind: WindHour[] = [],
 ): MergedHour[] {
   const tideByHour = new Map<string, TideHour>();
   for (const hour of tide) {
     tideByHour.set(normalizeHourKey(hour.ts), hour);
   }
+  const windByHour = new Map<string, WindHour>();
+  for (const hour of wind) {
+    windByHour.set(normalizeHourKey(hour.ts), hour);
+  }
 
   return swellCurrent.map((sc) => {
     const hourKey = normalizeHourKey(sc.ts);
     const tideHour = tideByHour.get(hourKey);
+    const windHour = windByHour.get(hourKey);
 
     const previousHourKey = new Date(new Date(hourKey).getTime() - ONE_HOUR_MS).toISOString();
     const previousTide = tideByHour.get(previousHourKey);
@@ -75,6 +84,8 @@ export function mergeHourlySeries(
       tideRateCmPerHr,
       tideCurrentUCmS: tideHour?.currentUCmS ?? null,
       tideCurrentVCmS: tideHour?.currentVCmS ?? null,
+      windSpeedMs: windHour?.windSpeedMs ?? null,
+      windDirDeg: windHour?.windDirDeg ?? null,
     };
   });
 }

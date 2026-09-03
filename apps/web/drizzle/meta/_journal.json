@@ -43,6 +43,13 @@
       "when": 1788244027701,
       "tag": "0005_useful_silver_samurai",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788465785771,
+      "tag": "0006_tan_guardsmen",
+      "breakpoints": true
     }
   ]
 }

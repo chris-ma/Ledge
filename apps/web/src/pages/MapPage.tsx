@@ -5,6 +5,7 @@ import { HourSlider } from "@/components/map/HourSlider";
 import { LedgeMarkers } from "@/components/map/LedgeMarkers";
 import { MapLegend } from "@/components/map/MapLegend";
 import { PressureHeatmap } from "@/components/map/PressureHeatmap";
+import { WindOverlay } from "@/components/map/WindOverlay";
 import { useCoastline } from "@/hooks/useCoastline";
 import { useConditionsAtRange } from "@/hooks/useConditionsAtRange";
 import { useLedges } from "@/hooks/useLedges";
@@ -71,11 +72,14 @@ export function MapPage() {
                 maxNativeZoom={16}
               />
               {coastlineQuery.data && ledgesQuery.data && (
-                <PressureHeatmap
-                  coastline={coastlineQuery.data}
-                  ledges={ledgesQuery.data}
-                  conditionsByLedgeId={conditionsByLedgeId}
-                />
+                <>
+                  <PressureHeatmap
+                    coastline={coastlineQuery.data}
+                    ledges={ledgesQuery.data}
+                    conditionsByLedgeId={conditionsByLedgeId}
+                  />
+                  <WindOverlay coastline={coastlineQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
+                </>
               )}
               {ledgesQuery.data && (
                 <>

@@ -37,9 +37,25 @@ export function MapLegend() {
           </div>
           <div className="mt-1 text-[10px] text-slate-400">Wave runup — not a fishing rating</div>
         </div>
+
+        <div className="mt-2 border-t border-white/10 pt-2">
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-300">
+            <LineSwatch color="#22c55e" />
+            <span>&lt;10kt</span>
+            <LineSwatch color="#eab308" />
+            <span>10-15kt</span>
+            <LineSwatch color="#ef4444" />
+            <span>&gt;15kt</span>
+          </div>
+          <div className="mt-1 text-[10px] text-slate-400">Wind (10m)</div>
+        </div>
       </div>
     </div>
   );
+}
+
+function LineSwatch({ color }: { color: string }) {
+  return <div className="h-1 w-3 rounded-full" style={{ backgroundColor: color }} />;
 }
 
 function FlagSwatch({ fill }: { fill: string }) {

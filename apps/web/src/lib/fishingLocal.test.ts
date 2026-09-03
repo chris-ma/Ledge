@@ -13,6 +13,8 @@ function condition(overrides: Partial<LedgeCondition> = {}): LedgeCondition {
     currentDirDeg: 90,
     tideHeightCm: 50,
     tideRateCmPerHr: 5,
+    windSpeedMs: null,
+    windDirDeg: null,
     waveLoad: null,
     currentLoad: null,
     tideModulationFactor: null,

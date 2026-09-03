@@ -122,6 +122,12 @@ export const ledgeConditions = pgTable(
     currentDirDeg: doublePrecision("current_dir_deg"),
     tideHeightCm: doublePrecision("tide_height_cm"),
     tideRateCmPerHr: doublePrecision("tide_rate_cm_per_hr"),
+    // 10m wind, from Open-Meteo's standard Forecast API (a separate host
+    // from the Marine API above — that one has no wind fields). Purely an
+    // informational overlay for now, not folded into any score. windDirDeg
+    // is the bearing the wind blows FROM, meteorological convention.
+    windSpeedMs: doublePrecision("wind_speed_ms"),
+    windDirDeg: doublePrecision("wind_dir_deg"),
 
     // Computed
     waveLoad: doublePrecision("wave_load"),

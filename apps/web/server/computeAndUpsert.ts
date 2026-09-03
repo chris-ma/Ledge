@@ -8,6 +8,7 @@ import { computeFishingPressureForHour } from "./model/fishingPressure.js";
 import { computeLliForHour } from "./model/lli.js";
 import { mergeHourlySeries } from "./merge.js";
 import { fetchSwellAndCurrent } from "./sources/openMeteo.js";
+import { fetchWind } from "./sources/openMeteoWind.js";
 import { fetchTide, type TideHour } from "./sources/odbTide.js";
 
 const UPSERT_CHUNK_SIZE = 500;
@@ -130,15 +131,21 @@ export async function computeAndUpsertForLedge(ledge: Ledge): Promise<ComputeAnd
   // to null (LLI then also comes out null, since it needs tide), but danger
   // tier/R2 still computes from Hs/Tp alone, which matters more to keep than
   // to lose.
-  const [swellCurrentResult, tideResult] = await Promise.allSettled([
+  const [swellCurrentResult, tideResult, windResult] = await Promise.allSettled([
     fetchSwellAndCurrent(ledge.lat, ledge.lon, FORECAST_DAYS),
     fetchTideWithFallback(ledge, tideStart, tideEnd),
+    fetchWind(ledge.lat, ledge.lon, FORECAST_DAYS),
   ]);
 
   if (swellCurrentResult.status === "rejected") {
     throw swellCurrentResult.reason;
   }
   const swellCurrent = swellCurrentResult.value;
+
+  if (windResult.status === "rejected") {
+    console.error(`Wind fetch failed for ledge "${ledge.name}" — proceeding with null wind fields for this run:`, windResult.reason);
+  }
+  const wind = windResult.status === "fulfilled" ? windResult.value : [];
 
   if (tideResult.status === "rejected") {
     console.error(
@@ -156,7 +163,7 @@ export async function computeAndUpsertForLedge(ledge: Ledge): Promise<ComputeAnd
       .where(eq(ledges.id, ledge.id));
   }
 
-  const merged = mergeHourlySeries(swellCurrent, tide);
+  const merged = mergeHourlySeries(swellCurrent, tide, wind);
 
   const dangerResults = computeDangerSeries(
     {
@@ -202,6 +209,8 @@ export async function computeAndUpsertForLedge(ledge: Ledge): Promise<ComputeAnd
       currentDirDeg: hour.currentDirDeg,
       tideHeightCm: hour.tideHeightCm,
       tideRateCmPerHr: hour.tideRateCmPerHr,
+      windSpeedMs: hour.windSpeedMs,
+      windDirDeg: hour.windDirDeg,
       waveLoad: lliResult?.waveLoad ?? null,
       currentLoad: lliResult?.currentLoad ?? null,
       tideModulationFactor: lliResult?.tideModulationFactor ?? null,
@@ -245,6 +254,8 @@ async function upsertConditions(rows: (typeof ledgeConditions.$inferInsert)[]): 
           currentDirDeg: sql`excluded.current_dir_deg`,
           tideHeightCm: sql`excluded.tide_height_cm`,
           tideRateCmPerHr: sql`excluded.tide_rate_cm_per_hr`,
+          windSpeedMs: sql`excluded.wind_speed_ms`,
+          windDirDeg: sql`excluded.wind_dir_deg`,
           waveLoad: sql`excluded.wave_load`,
           currentLoad: sql`excluded.current_load`,
           tideModulationFactor: sql`excluded.tide_modulation_factor`,

@@ -42,6 +42,9 @@ export interface LedgeCondition {
   currentDirDeg: number | null;
   tideHeightCm: number | null;
   tideRateCmPerHr: number | null;
+  /** 10m wind speed (m/s) and the bearing it blows FROM — informational only, not part of any score. */
+  windSpeedMs: number | null;
+  windDirDeg: number | null;
   waveLoad: number | null;
   currentLoad: number | null;
   tideModulationFactor: number | null;

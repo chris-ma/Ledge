@@ -68,3 +68,20 @@ export function fishingConditionColor(fishingPressure: number | null): string {
 
 /** Evenly-spaced sample values for rendering the pressure legend gradient. */
 export const PRESSURE_LEGEND_STOPS: readonly number[] = [0, 33, 66, 100];
+
+export const MS_TO_KT = 1.943844;
+
+export const WIND_LIGHT_KT = 10;
+export const WIND_MODERATE_KT = 15;
+
+const WIND_LIGHT_COLOR = "#22c55e"; // green-500, under 10kt
+const WIND_MODERATE_COLOR = "#eab308"; // yellow-500, 10-15kt
+const WIND_STRONG_COLOR = "#ef4444"; // red-500, over 15kt
+
+/** Wind speed (m/s) -> discrete threshold color: green under 10kt, yellow 10-15kt, red over 15kt. */
+export function windSpeedColor(windSpeedMs: number): string {
+  const kt = windSpeedMs * MS_TO_KT;
+  if (kt < WIND_LIGHT_KT) return WIND_LIGHT_COLOR;
+  if (kt <= WIND_MODERATE_KT) return WIND_MODERATE_COLOR;
+  return WIND_STRONG_COLOR;
+}
