@@ -72,24 +72,22 @@ export function MapPage() {
                 maxNativeZoom={16}
               />
               {coastlineQuery.data && ledgesQuery.data && (
-                <>
-                  <PressureHeatmap
-                    coastline={coastlineQuery.data}
-                    ledges={ledgesQuery.data}
-                    conditionsByLedgeId={conditionsByLedgeId}
-                  />
-                  <WindOverlay coastline={coastlineQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
-                </>
+                <PressureHeatmap
+                  coastline={coastlineQuery.data}
+                  ledges={ledgesQuery.data}
+                  conditionsByLedgeId={conditionsByLedgeId}
+                />
               )}
               {ledgesQuery.data && (
                 <>
+                  <WindOverlay ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
                   <LedgeMarkers ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
                   <DangerFlags ledges={ledgesQuery.data} conditionsByLedgeId={conditionsByLedgeId} />
                 </>
               )}
             </MapContainer>
 
-            <MapLegend />
+            <MapLegend ts={selectedTs} />
           </div>
 
           <HourSlider
